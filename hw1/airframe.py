@@ -211,7 +211,7 @@ class AirCraftDrawing():
         t = [self.pos[0][i],self.pos[1][i],self.pos[2][i]]
         self.create_plane(eul,t)
 
-    def show_animation(self,n_frames = 100,rep = True,interv = 10):
+    def show_animation(self,n_frames = 100,rep = False,interv = 10):
         ani = animation.FuncAnimation(self.fig,self.animate,self.n_frames,interval=self.interv,repeat=rep)
         plt.show(block=False)
         plt.close()
@@ -230,8 +230,8 @@ class AirCraftDrawing():
     def start(self):
         # Starts animation on push button input
         self.get_values()
-        self.input_goal()
-        self.show_animation(rep=False)
+        self.slider_goal()
+        self.show_animation()
 
         # Figure
         plt.close('all')
@@ -266,7 +266,7 @@ class AirCraftDrawing():
         self.z_s.set(0)
 
         
-    def input_goal(self):        
+    def slider_goal(self):        
         # Desired euler angles and positions here (from sliders)
         self.ang = [np.linspace(self.init_psi,self.psi,self.n_frames),
                np.linspace(self.init_th,self.th,self.n_frames),
@@ -282,6 +282,18 @@ class AirCraftDrawing():
         self.init_x = deepcopy(self.x)
         self.init_y = deepcopy(self.y)
         self.init_z = deepcopy(self.z)
+
+    # ------------------------------------------------------------------------------#
+    # If not using Tkinter but just inputting calculated euler angles and position
+    def input_goal(self,euler_angles,positions):
+        '''Inputs:
+        euler_angles: vector of euler angles in order psi, theta, phi
+        positions: vector of positions in order x, y, z'''
+        self.ang = [euler[0],euler[1],euler[2]]
+        self.pos = [positions[0],positions[1],positions[2]]
+        self.show_animation()
+
+
 
 # Create aircraft Instance
 A = AirCraftDrawing()
