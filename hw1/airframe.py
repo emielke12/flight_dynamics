@@ -298,7 +298,7 @@ class AirCraftDrawing():
 # Create aircraft Instance
 A = AirCraftDrawing()
 
-# Loop
+# Loop if using Tkinter
 A.sm.mainloop()
     
 
