@@ -24,51 +24,12 @@ class AirCraftDrawing():
         self.tail_h = 0.5
         self.axes_length = 1.5
 
-        # Figure
-        plt.close('all')
-        self.fig = plt.figure(figsize=(10,10)) # Figure Window size
-        self.ax = a3(self.fig) # 3d axis
-        self.ax.set_xbound(-5,5) # Axis bounds
-        self.ax.set_ybound(-5,5)
-        self.ax.set_zbound(-5,5)
-        self.ax.view_init(elev=21,azim=43) # Axis view
-        self.ax.dist=10 
-        self.ax.invert_zaxis() # North east down view
-        self.ax.invert_yaxis() # North east down view
-
+        # Make Figure
+        self.make_figure()
+        
         # Animation Values
         self.n_frames = 40
         self.interv = 10
-
-        # Loop condition
-        self.loop_start = False
-        self.loop = True
-
-        # Slider Definition
-        self.sm = Tk()
-        self.phi_s = Scale(self.sm, from_=0, to=360,orient=HORIZONTAL,resolution=5,label='Roll')
-        self.th_s = Scale(self.sm, from_=0, to=360,orient=HORIZONTAL,resolution=5,label='Pitch')
-        self.psi_s = Scale(self.sm, from_=0, to=360,orient=HORIZONTAL,resolution=5,label='Yaw')
-        self.x_s = Scale(self.sm, from_=-10, to=10,orient=HORIZONTAL,resolution=0.5,label='X')
-        self.y_s = Scale(self.sm, from_=-10, to=10,orient=HORIZONTAL,resolution=0.5,label='Y')
-        self.z_s = Scale(self.sm, from_=-10, to=10,orient=HORIZONTAL,resolution=0.5,label='Z')
-        self.phi_s.pack()
-        self.th_s.pack()
-        self.psi_s.pack()
-        self.x_s.pack()
-        self.y_s.pack()
-        self.z_s.pack()
-        self.phi_s.set(0)
-        self.th_s.set(0)
-        self.psi_s.set(0)
-        self.x_s.set(0)
-        self.y_s.set(0)
-        self.z_s.set(0)
-
-        # Button Definition
-        Button(self.sm,text='Plot',command=self.start).pack()
-        Button(self.sm,text='Reset Sliders',command=self.reset).pack()
-        Button(self.sm,text='Stop',command=self.stop).pack()
         
         # Visualization start points
         self.phi = 0.0
@@ -83,6 +44,20 @@ class AirCraftDrawing():
         self.init_x = 0.0
         self.init_y = 0.0
         self.init_z = 0.0
+
+    def make_figure(self):
+        # Figure
+        plt.close('all')
+        self.fig = plt.figure(figsize=(10,10)) # Figure Window size
+        self.ax = a3(self.fig) # 3d axis
+        self.ax.set_xbound(-5,5) # Axis bounds
+        self.ax.set_ybound(-5,5)
+        self.ax.set_zbound(-5,5)
+        self.ax.view_init(elev=21,azim=43) # Axis view
+        self.ax.dist=10 
+        self.ax.invert_zaxis() # North east down view
+        self.ax.invert_yaxis() # North east down view
+
 
         
     def draw_line(self,px,py,pz,R,t,colour='r',lw = '5'):
@@ -201,16 +176,6 @@ class AirCraftDrawing():
              [np.sin(phi)*np.sin(th)*np.cos(psi) - np.cos(phi)*np.sin(psi), np.sin(phi)*np.sin(th)*np.sin(psi) + np.cos(phi)*np.cos(psi), np.sin(phi)*np.cos(th)],
              [np.cos(phi)*np.sin(th)*np.cos(psi) + np.sin(phi)*np.sin(psi), np.cos(phi)*np.sin(th)*np.sin(psi) - np.sin(phi)*np.cos(psi), np.cos(phi)*np.cos(th)]] # rotation matrix
         R = np.transpose(R)
-        # R_roll = [[1,0,0],
-        #           [0,np.cos(phi),np.sin(phi)],
-        #           [0,-np.sin(phi),np.cos(phi)]]
-        # R_pitch = [[np.cos(th),0,-np.sin(th)],
-        #           [0,1,0],
-        #           [np.sin(th),0,np.cos(th)]]
-        # R_yaw = [[np.cos(psi),np.sin(psi),0],
-        #           [-np.sin(psi),np.cos(psi),0],
-        #           [0,0,1]]
-        # R = np.transpose(np.matmul(np.matmul(R_roll,R_pitch),R_yaw))
         return R
 
     #--------------------------------------------------------------------------#
@@ -225,66 +190,34 @@ class AirCraftDrawing():
         ani = animation.FuncAnimation(self.fig,self.animate,self.n_frames,interval=self.interv,repeat=rep)
         plt.show(block=False)
         plt.close()
+        self.make_figure()
 
     # ------------------------------------------------------------------------------#
-    # These functions deal with the Tkinter block
-    def get_values(self):
-        # Gets values from Tkinter sliders
-        self.psi = self.psi_s.get() * np.pi/180.0
-        self.th = self.th_s.get() * np.pi/180.0
-        self.phi = self.phi_s.get() * np.pi/180.0
-        self.x = self.x_s.get()
-        self.y = self.y_s.get()
-        self.z = self.z_s.get()
-
-    def start(self):
-        # Starts animation on push button input
-        self.get_values()
+    # If not using Tkinter but just inputting calculated euler angles and position
+    def input_goal(self,euler,positions):
+        '''Inputs:
+        euler_angles: vector of euler angles in order psi, theta, phi
+        positions: vector of positions in order x, y, z'''
+        self.phi = euler[2]
+        self.th = euler[1]
+        self.psi = euler[0]
+        self.x = positions[0]
+        self.y = positions[1]
+        self.z = positions[2]
         self.slider_goal()
-        self.show_animation()
 
-        # Figure
-        plt.close('all')
-        self.fig = plt.figure(figsize=(10,10)) # Figure Window size
-        self.ax = a3(self.fig) # 3d axis
-        self.ax.set_xbound(-5,5) # Axis bounds
-        self.ax.set_ybound(-5,5)
-        self.ax.set_zbound(-5,5)
-        self.ax.view_init(elev=21,azim=43) # Axis view
-        self.ax.dist=10 
-        self.ax.invert_zaxis() # North east down view
-        self.ax.invert_yaxis() # North east down view
-
-
-    def stop(self):
-        # Stops script
-        sys.exit()
-
-    def reset(self):
-        # Resets slider values and position
-        self.init_psi = 0.0
-        self.init_th = 0.0
-        self.init_phi = 0.0
-        self.init_x = 0.0
-        self.init_y = 0.0
-        self.init_z = 0.0
-        self.phi_s.set(0)
-        self.th_s.set(0)
-        self.psi_s.set(0)
-        self.x_s.set(0)
-        self.y_s.set(0)
-        self.z_s.set(0)
-
-        
-    def slider_goal(self):        
+    def slider_goal(self):
         # Desired euler angles and positions here (from sliders)
         self.ang = [np.linspace(self.init_psi,self.psi,self.n_frames),
-               np.linspace(self.init_th,self.th,self.n_frames),
-               np.linspace(self.init_phi,self.phi,self.n_frames)]
+                    np.linspace(self.init_th,self.th,self.n_frames),
+                    np.linspace(self.init_phi,self.phi,self.n_frames)]
         self.pos = [np.linspace(self.init_x,self.x,self.n_frames),
-               np.linspace(self.init_y,self.y,self.n_frames),
-               np.linspace(self.init_z,self.z,self.n_frames)]
+                    np.linspace(self.init_y,self.y,self.n_frames),
+                    np.linspace(self.init_z,self.z,self.n_frames)]
 
+        # Run Animation
+        self.show_animation()
+                    
         # Now set init as current
         self.init_psi = deepcopy(self.psi)
         self.init_th = deepcopy(self.th)
@@ -292,18 +225,7 @@ class AirCraftDrawing():
         self.init_x = deepcopy(self.x)
         self.init_y = deepcopy(self.y)
         self.init_z = deepcopy(self.z)
-
-    # ------------------------------------------------------------------------------#
-    # If not using Tkinter but just inputting calculated euler angles and position
-    def input_goal(self,euler_angles,positions):
-        '''Inputs:
-        euler_angles: vector of euler angles in order psi, theta, phi
-        positions: vector of positions in order x, y, z'''
-        self.ang = [euler[0],euler[1],euler[2]]
-        self.pos = [positions[0],positions[1],positions[2]]
-        self.show_animation()
-
-
+                    
 
 # # Create aircraft Instance
 # A = AirCraftDrawing()
