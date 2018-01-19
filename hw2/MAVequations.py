@@ -9,35 +9,16 @@ class MAVEOM(AirCraftDrawing):
         AirCraftDrawing.__init__(self)
 
         # Plane Parameters
-        self.M = 2
+        self.M = 13.5
         self.g = 9.81
-        self.Jx = 0.01
-        self.Jy = 0.01
-        self.Jz = 0.01
-        self.Jxz = 0.01
+        self.Jx = 0.8244
+        self.Jy = 1.135
+        self.Jz = 1.759
+        self.Jxz = 0.1204
 
-    def equations_of_motion(self,x,t,uu):
+    def eom(self,x,t,fx,fy,fz,l,m,n):
         # States
-        pn = x[0]
-        pe = x[1]
-        pd = x[2]
-        u = x[3]
-        v = x[4]
-        w = x[5]
-        phi = x[6]
-        th = x[7]
-        psi = x[8]
-        p = x[9]
-        q = x[10]
-        r = x[11]
-
-        # Inputs
-        fx = uu[0]
-        fy = uu[1]
-        fz = uu[2]
-        l = uu[3]
-        m = uu[4]
-        n = uu[5]
+        pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
         
         # Eq 3.14 Translational Kinematics
         R = np.transpose([[np.cos(th)*np.cos(psi), np.cos(th)*np.sin(psi), -np.sin(th)],
@@ -46,9 +27,9 @@ class MAVEOM(AirCraftDrawing):
         dpNEDdt = np.matmul(R,[u,v,w])
         
         # Eq 3.15 Translational Dynamics
-        R = [[r * v - q * w],
-             [p * w - r * u],
-             [q * u - p * v]]
+        R = [r * v - q * w,
+             p * w - r * u,
+             q * u - p * v]
         duvwdt = np.multiply(1.0/self.M,[fx,fy,fz]) + R
 
         # Eq 3.16 Rotational Kinematics
@@ -68,22 +49,21 @@ class MAVEOM(AirCraftDrawing):
         g7 = ((self.Jx - self.Jy) * self.Jx + self.Jxz**2)/g
         g8 = self.Jx / g
 
-        R1 = [[g1 * p * q - g2 * q * r],
-              [g5 * p * r - g6 * (p**2 - r**2)],
-              [g7 * p * q - g1 * q * r]]
-        R2 = [[g3 * l + g4 * n],
-              [m / self.Jy],
-              [g4 * l + g8 * n]]
-        dpqrdt = np.add(R1,R2)
+        R1 = [g1 * p * q - g2 * q * r,
+              g5 * p * r - g6 * (p**2 - r**2),
+              g7 * p * q - g1 * q * r]
+        R2 = [g3 * l + g4 * n,
+              m / self.Jy,
+              g4 * l + g8 * n]
+        dpqrdt = np.add(R1,R2).tolist()
 
         xdot = [dpNEDdt[0], dpNEDdt[1], dpNEDdt[2], duvwdt[0], duvwdt[1], duvwdt[2], 
                 deuldt[0], deuldt[1], deuldt[2], dpqrdt[0], dpqrdt[1], dpqrdt[2]]
         return xdot
 
-
 if __name__ == "__main__":
-    aircraft = AirCraftDrawing()
-    meq = MAVEOM(AirCraftDrawing)
+    # aircraft = AirCraftDrawing()
+    meq = MAVEOM()
 
     # Initial Conditions
     pn0 = 0
@@ -99,27 +79,34 @@ if __name__ == "__main__":
     q0 = 0
     r0 = 0
 
-    x0 = [pn0,pe0,pd0,u0,v0,w0,phi0,th0,psi0,p0,q0,r0] 
+    x0 = [pn0,pe0,pd0,u0,v0,w0,phi0,th0,psi0,p0,q0,r0]
+
+    # Time Steps
+    step = 301
 
     # Inputs
-    fx = 1.0
-    fy = 0.0
-    fz = 0.0
-    l = 0.0
-    m = 0.0
-    n = 0.0
-
-    uu = [fx,fy,fz,l,m,n]
+    fx = np.zeros(step)
+    fy = np.zeros(step)
+    fz = np.zeros(step)
+    l = np.zeros(step)
+    m = np.zeros(step)
+    n = np.zeros(step)
+    # n[50:70] = 10.0
+    # n[70:110] = -10.0
+    # n[110:130] = 10.0
 
     # Time Vector
-    t = np.linspace(0,10,101)
+    t = np.linspace(0,10,step)
 
     # Solve ODE
-    sol = odeint(equations_of_motion,x0,t,args=(uu))
+    sols = np.zeros((len(t),len(x0)))
+    for i in xrange(step):
+        sol = odeint(meq.eom,x0,[t[i-1],t[i]],args=(fx[i],fy[i],fz[i],l[i],m[i],n[i]))
+        for j in xrange(len(x0)):
+            sols[i,j] = sol[-1][j]
+        x0 = sol[-1:][0]        
 
-#     # Plot
-#     plt.plot(t,sol[:,0])
-#     plt.show()
-    pos = [sol[:,0],sol[:,1],sol[:,2]]
-    eul = [sol[:,6],sol[:,7],sol[:,8]]
+
+    pos = [sols[:,0],sols[:,1],sols[:,2]]
+    eul = [sols[:,6],sols[:,7],sols[:,8]]
     meq.input_goal(eul,pos)

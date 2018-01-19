@@ -6,7 +6,6 @@ import matplotlib.animation as animation
 import numpy as np
 import time,sys
 from copy import deepcopy
-from Tkinter import *
 
 class AirCraftDrawing():
     def __init__(self):
@@ -28,7 +27,7 @@ class AirCraftDrawing():
         self.make_figure()
         
         # Animation Values
-        self.n_frames = 40
+        self.n_frames = 400
         self.interv = 10
         
         # Visualization start points
@@ -182,9 +181,10 @@ class AirCraftDrawing():
     # These functions do the animation
     def animate(self,i):
         ''' animation function'''
-        eul = [self.ang[0][i],self.ang[1][i],self.ang[2][i]]
-        t = [self.pos[0][i],self.pos[1][i],self.pos[2][i]]
-        self.create_plane(eul,t)
+        if i < len(self.ang[0]):
+            eul = [self.ang[0][i],self.ang[1][i],self.ang[2][i]]
+            t = [self.pos[0][i],self.pos[1][i],self.pos[2][i]]
+            self.create_plane(eul,t)
 
     def show_animation(self,n_frames = 100,rep = False,interv = 10):
         ani = animation.FuncAnimation(self.fig,self.animate,self.n_frames,interval=self.interv,repeat=rep)
