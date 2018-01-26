@@ -20,7 +20,7 @@ if __name__ == "__main__":
     x0 = [pn0,pe0,pd0,u0,v0,w0,phi0,th0,psi0,p0,q0,r0]
 
     # Time Steps
-    step = 301
+    step = 421
 
     # Inputs
     fx = np.zeros(step)
@@ -29,9 +29,21 @@ if __name__ == "__main__":
     l = np.zeros(step)
     m = np.zeros(step)
     n = np.zeros(step)
-    # n[50:70] = 10.0
-    # n[70:110] = -10.0
-    # n[110:130] = 10.0
+    fx[20:40] = 40.0
+    fx[40:80] = -40.0
+    fx[80:100] = 40.0
+    fy[100:120] = 40.0
+    fy[120:160] = -40.0
+    fy[160:180] = 40.0
+    fz[180:200] = 40.0
+    fz[200:240] = -40.0
+    fz[240:260] = 40.0
+    m[260:280] = 10.0
+    m[280:320] = -10.0
+    m[320:340] = 10.0
+    n[340:360] = 10.0
+    n[360:400] = -10.0
+    n[400:420] = 10.0
 
     # Control Surface Inputs and Wind
     
