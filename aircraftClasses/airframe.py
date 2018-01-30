@@ -21,9 +21,10 @@ class AirCraftDrawing():
         self.tailwing_l = 0.5
         self.tailwing_w = 1.5
         self.tail_h = 0.5
-        self.axes_length = 1.5
+        self.axes_length = 3.5
 
         # Make Figure
+        self.bounds = 30
         self.make_figure()
         
         # Animation Values
@@ -44,15 +45,17 @@ class AirCraftDrawing():
         self.init_y = 0.0
         self.init_z = 0.0
 
+
+
     def make_figure(self):
         # Figure
         plt.close('all')
         self.fig = plt.figure(figsize=(10,10)) # Figure Window size
         self.ax = a3(self.fig) # 3d axis
-        self.ax.set_xbound(-10,10) # Axis bounds
-        self.ax.set_ybound(-10,10)
-        self.ax.set_zbound(-10,10)
-        self.ax.view_init(elev=21,azim=43) # Axis view
+        self.ax.set_xbound(-self.bounds,self.bounds) # Axis bounds
+        self.ax.set_ybound(-self.bounds,self.bounds)
+        self.ax.set_zbound(-self.bounds,self.bounds)
+        self.ax.view_init(elev=30,azim=140) # Axis view
         self.ax.dist=10 
         self.ax.invert_zaxis() # North east down view
         self.ax.invert_yaxis() # North east down view
@@ -186,6 +189,13 @@ class AirCraftDrawing():
             t = [self.pos[0][i],self.pos[1][i],self.pos[2][i]]
             self.create_plane(eul,t)
 
+            # Edits Axes So I don't have to zoom out every time. Not sure if I want it
+            if abs(t[2]) > self.bounds+5 or abs(t[1]) > self.bounds+5 or abs(t[0]) > self.bounds+5: 
+                self.bounds += 10
+                self.ax.set_xbound(-self.bounds,self.bounds)
+                self.ax.set_ybound(-self.bounds,self.bounds)
+                self.ax.set_zbound(-self.bounds,self.bounds)
+            
     def show_animation(self,n_frames = 100,rep = False,interv = 10):
         ani = animation.FuncAnimation(self.fig,self.animate,self.n_frames,interval=self.interv,repeat=rep)
         plt.show(block=False)

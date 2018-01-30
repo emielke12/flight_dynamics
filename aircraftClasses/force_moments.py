@@ -1,9 +1,21 @@
 from MAVequations import *
+import scipy.signal as sigs
 
 class MAVForces(MAVEOM):
     def __init__(self):
         MAVEOM.__init__(self)
+        self.Va = 0.0
+        self.alpha = 0.0
+        self.beta = 0.0
         
+        self.low_altitude_low_turbulence = [50,200,50,1.06,0.7]
+        self.low_altitude_mod_turbulence = [50,200,50,2.12,1.4]        
+        self.med_altitude_low_turbulence = [600,533,533,1.5,1.5]        
+        self.med_altitude_mod_turbulence = [600,533,533,3.0,3.0]
+        self.gust = {'low_low':self.low_altitude_low_turbulence,
+                     'low_mod':self.low_altitude_mod_turbulence,
+                     'med_low':self.med_altitude_low_turbulence,
+                     'med_mod':self.med_altitude_mod_turbulence}
 
     def force_calc(self,x, delta, wind):
         ''' Calclates forces and moments acting on airframe
@@ -31,6 +43,9 @@ class MAVForces(MAVEOM):
         V_a = np.linalg.norm(V_ab)
         alpha = np.arctan(V_ab[2]/V_ab[0])
         beta = np.arcsin(V_ab[1]/V_a)
+        self.Va = V_a
+        self.alpha = alpha
+        self.beta = beta
 
         # Compute external forces and torques on aircraft
         C_X = self.calc_Cx(alpha)
@@ -92,7 +107,52 @@ class MAVForces(MAVEOM):
         return Cz_deltae
     
         
-    
+    def calc_dryden_gust(self,dt,description='low_low'):
+        # Gust Value
+        freq = np.random.randn(1)
+        
+        # Gust Parameters
+        L_u = self.gust[description][1]
+        L_v = L_u
+        L_w = self.gust[description][2]
+        sig_u = self.gust[description][3]
+        sig_v = sig_u
+        sig_w = self.gust[description][4]
 
+        # Transfer Function numerator and denominators
+        H_u_num = [sig_u * np.sqrt(2 * self.Va)]
+        H_u_den = [np.sqrt(L_u), np.sqrt(L_u) * self.Va/L_u]
+        
+        H_v_num = [sig_v * np.sqrt(3 * self.Va),
+                   sig_v * np.sqrt(3 * self.Va) * (self.Va/(np.sqrt(3) * L_v))]
+        H_v_den = [np.sqrt(L_v),
+                   np.sqrt(L_v) * 2 * self.Va / L_v,
+                   np.sqrt(L_v) * self.Va**2/L_v**2]
+
+        H_w_num = [sig_w * np.sqrt(3 * self.Va),
+                   sig_w * np.sqrt(3 * self.Va) * (self.Va/(np.sqrt(3) * L_w))]
+        H_w_den = [np.sqrt(L_w),
+                   np.sqrt(L_w) * 2 * self.Va / L_w,
+                   np.sqrt(L_w) * self.Va**2/L_w**2]            
     
-    
+        # Transfer Functions
+        H_u = sigs.TransferFunction(H_u_num,H_u_den)
+        H_v = sigs.TransferFunction(H_v_num,H_v_den)
+        H_w = sigs.TransferFunction(H_w_num,H_w_den)
+
+        # Frequency Response
+        H_u = H_u.to_ss()
+        H_u = sigs.lti(H_u.A,H_u.B,H_u.C,H_u.D)
+        H_v = H_v.to_ss()
+        H_v = sigs.lti(H_v.A,H_v.B,H_v.C,H_v.D)
+        H_w = H_w.to_ss()
+        H_w = sigs.lti(H_w.A,H_w.B,H_w.C,H_w.D)
+
+        t = np.linspace(0,dt,2)
+        u = [freq.tolist()[0]] * 2
+        tout,u_wg,xu_wg = sigs.lsim(H_u,u,t)
+        tout,v_wg,xv_wg = sigs.lsim(H_v,u,t)
+        tout,w_wg,xw_wg = sigs.lsim(H_w,u,t)
+        
+        return u_wg[-1],v_wg[-1],w_wg[-1]
+        
