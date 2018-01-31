@@ -47,7 +47,7 @@ class AirCraftDrawing():
 
 
 
-    def make_figure(self):
+    def make_figure(self,real_time = True):
         # Figure
         plt.close('all')
         self.fig = plt.figure(figsize=(10,10)) # Figure Window size
@@ -59,7 +59,8 @@ class AirCraftDrawing():
         self.ax.dist=10 
         self.ax.invert_zaxis() # North east down view
         self.ax.invert_yaxis() # North east down view
-
+        if real_time == True:
+            self.fig.show()
 
         
     def draw_line(self,px,py,pz,R,t,colour='r',lw = '5'):
@@ -168,16 +169,16 @@ class AirCraftDrawing():
         self.create_tailfin(R,t)
 
         # Draw plane
-        plt.draw()
+        # plt.draw()
+        self.fig.canvas.draw()
         
     def get_rotation_matrix(self,eul):
         psi = eul[2] # yaw 
         th = eul[1] # pitch 
         phi = eul[0] # roll
-        R = [[np.cos(th)*np.cos(psi), np.cos(th)*np.sin(psi), -np.sin(th)],
-             [np.sin(phi)*np.sin(th)*np.cos(psi) - np.cos(phi)*np.sin(psi), np.sin(phi)*np.sin(th)*np.sin(psi) + np.cos(phi)*np.cos(psi), np.sin(phi)*np.cos(th)],
-             [np.cos(phi)*np.sin(th)*np.cos(psi) + np.sin(phi)*np.sin(psi), np.cos(phi)*np.sin(th)*np.sin(psi) - np.sin(phi)*np.cos(psi), np.cos(phi)*np.cos(th)]] # rotation matrix
-        R = np.transpose(R)
+        R = [[np.cos(th) * np.cos(psi),np.sin(phi) * np.sin(th) * np.cos(psi) - np.cos(phi) * np.sin(psi),np.cos(phi) * np.sin(th) * np.cos(psi) + np.sin(phi) * np.sin(psi)],
+             [np.cos(th) * np.sin(psi),np.sin(phi) * np.sin(th) * np.sin(psi) + np.cos(phi) * np.cos(psi),np.cos(phi) * np.sin(th) * np.sin(psi) - np.sin(phi) * np.cos(psi)],
+             [-np.sin(th), np.sin(phi) * np.cos(th), np.cos(phi) * np.cos(th)]]
         return R
 
     #--------------------------------------------------------------------------#
@@ -197,11 +198,23 @@ class AirCraftDrawing():
                 self.ax.set_zbound(-self.bounds,self.bounds)
             
     def show_animation(self,n_frames = 100,rep = False,interv = 10):
+        self.make_figure(False)
         ani = animation.FuncAnimation(self.fig,self.animate,self.n_frames,interval=self.interv,repeat=rep)
         plt.show(block=False)
         plt.close()
-        self.make_figure()
 
+
+    def plot_update(self,eul,pos):
+        '''Input euler angles and positions one time step at a time to plot real-time'''
+        self.create_plane(eul,pos)
+        # Edits Axes So I don't have to zoom out every time. Not sure if I want it
+        if abs(pos[2])>self.bounds+5 or abs(pos[1])>self.bounds+5 or abs(pos[0])>self.bounds+5: 
+            self.bounds += 10
+            self.ax.set_xbound(-self.bounds,self.bounds)
+            self.ax.set_ybound(-self.bounds,self.bounds)
+            self.ax.set_zbound(-self.bounds,self.bounds)
+
+        
     # ------------------------------------------------------------------------------#
     # If not using Tkinter but just inputting calculated euler angles and position
     def input_goal(self,euler,positions,single_position = False):
@@ -224,6 +237,7 @@ class AirCraftDrawing():
         self.ang = [self.phi,self.th,self.psi]
         self.pos = [self.x,self.y,self.z]
         self.show_animation()
+        # self.plot_update()
 
         # Now set init as current
         self.init_psi = deepcopy(self.psi)

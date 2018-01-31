@@ -17,6 +17,22 @@ class MAVForces(MAVEOM):
                      'med_low':self.med_altitude_low_turbulence,
                      'med_mod':self.med_altitude_mod_turbulence}
 
+        self.state_fig = plt.figure(figsize=(20,10))
+        self.ax1 = self.state_fig.add_subplot(261)
+        self.ax2 = self.state_fig.add_subplot(262)
+        self.ax3 = self.state_fig.add_subplot(263)
+        self.ax4 = self.state_fig.add_subplot(264)
+        self.ax5 = self.state_fig.add_subplot(265)
+        self.ax6 = self.state_fig.add_subplot(266)
+        self.ax7 = self.state_fig.add_subplot(267)
+        self.ax8 = self.state_fig.add_subplot(268)
+        self.ax9 = self.state_fig.add_subplot(269)
+        self.ax10 = self.state_fig.add_subplot(2,6,10)
+        self.ax11 = self.state_fig.add_subplot(2,6,11)
+        self.ax12 = self.state_fig.add_subplot(2,6,12)
+
+        self.state_fig.show()
+
     def force_calc(self,x, delta, wind):
         ''' Calclates forces and moments acting on airframe
         Inputs are states, control surface deltas, wind
@@ -65,7 +81,9 @@ class MAVForces(MAVEOM):
         m = prefix * self.c * (self.C_m0 + self.C_malpha * alpha + self.C_mq * self.c / (2 * V_a) * q + self.C_mdeltae * delta_e)
         n = prefix * self.b * (self.C_n0 + self.C_nbeta * beta + self.C_np * self.b / (2 * V_a) * p + self.C_nr * self.b / (2 * V_a) * r + self.C_ndeltaa * delta_a + self.C_ndeltar * delta_r)
 
-        return fx,fy,fz,l,m,n,V_a,alpha,beta,w_n,w_e,w_d
+        w = np.matmul(np.transpose(R_bv),V_wb)
+
+        return fx,fy,fz,l,m,n,V_a,alpha,beta,w[0],w[1],w[2]
 
 
     def calc_CL(self,alpha):
@@ -155,4 +173,49 @@ class MAVForces(MAVEOM):
         tout,w_wg,xw_wg = sigs.lsim(H_w,u,t)
         
         return u_wg[-1],v_wg[-1],w_wg[-1]
+        
+
+    def plot_states(self,states):
+        # Clear Axes
+        self.ax1.clear()
+        self.ax2.clear()
+        self.ax3.clear()
+        self.ax4.clear()
+        self.ax5.clear()
+        self.ax6.clear()
+        self.ax7.clear()
+        self.ax8.clear()
+        self.ax9.clear()
+        self.ax10.clear()
+        self.ax11.clear()
+        self.ax12.clear()
+
+        # Set Labels
+        self.ax1.set_ylabel('P_n (m)')
+        self.ax2.set_ylabel('P_e (m)')
+        self.ax3.set_ylabel('h (m)')
+        self.ax4.set_ylabel('u (m/s)')
+        self.ax5.set_ylabel('v (m/s)')
+        self.ax6.set_ylabel('w (m/s)')
+        self.ax7.set_ylabel(r'$\phi (rad)')
+        self.ax8.set_ylabel(r'$\theta (rad)')
+        self.ax9.set_ylabel(r'$\psi (rad)')
+        self.ax10.set_ylabel('p (rad/s)')
+        self.ax11.set_ylabel('q (rad/s)')
+        self.ax12.set_ylabel('r (rad/s)')
+        
+        # Plot States
+        self.ax1.plot(states[:,0])
+        self.ax2.plot(states[:,1])
+        self.ax3.plot(states[:,2])
+        self.ax4.plot(states[:,3])
+        self.ax5.plot(states[:,4])
+        self.ax6.plot(states[:,5])
+        self.ax7.plot(states[:,6])
+        self.ax8.plot(states[:,7])
+        self.ax9.plot(states[:,8])
+        self.ax10.plot(states[:,9])
+        self.ax11.plot(states[:,10])
+        self.ax12.plot(states[:,11])
+        self.state_fig.canvas.draw()
         

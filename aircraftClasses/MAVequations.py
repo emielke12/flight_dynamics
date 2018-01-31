@@ -65,16 +65,16 @@ class MAVEOM(AirCraftDrawing):
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
         
         # Eq 3.14 Translational Kinematics
-        R = np.transpose([[np.cos(th)*np.cos(psi), np.cos(th)*np.sin(psi), -np.sin(th)],
-             [np.sin(phi)*np.sin(th)*np.cos(psi) - np.cos(phi)*np.sin(psi), np.sin(phi)*np.sin(th)*np.sin(psi) + np.cos(phi)*np.cos(psi), np.sin(phi)*np.cos(th)],
-             [np.cos(phi)*np.sin(th)*np.cos(psi) + np.sin(phi)*np.sin(psi), np.cos(phi)*np.sin(th)*np.sin(psi) - np.sin(phi)*np.cos(psi), np.cos(phi)*np.cos(th)]])
+        R = [[np.cos(th) * np.cos(psi), np.sin(phi) * np.sin(th) * np.cos(psi) - np.cos(phi) * np.sin(psi), np.cos(phi) * np.sin(th) * np.cos(psi) + np.sin(phi) * np.sin(psi)],
+             [np.cos(th) * np.sin(psi), np.sin(phi) * np.sin(th) * np.sin(psi) + np.cos(phi) * np.cos(psi), np.cos(phi) * np.sin(th) * np.sin(psi) - np.sin(phi) * np.cos(psi)],
+             [-np.sin(th), np.sin(phi) * np.cos(th), np.cos(phi) * np.cos(th)]]
         dpNEDdt = np.matmul(R,[u,v,w])
         
         # Eq 3.15 Translational Dynamics
         R = [r * v - q * w,
              p * w - r * u,
              q * u - p * v]
-        duvwdt = np.multiply(1.0/self.mass,[fx,fy,fz]) + R
+        duvwdt = R + [fx/self.mass,fy/self.mass,fz/self.mass]
 
         # Eq 3.16 Rotational Kinematics
         R = [[1, np.sin(phi)*np.tan(th), np.cos(phi)*np.tan(th)],
@@ -84,8 +84,8 @@ class MAVEOM(AirCraftDrawing):
 
         # Eq 3.17 Rotational Dynamics
         g = self.Jx*self.Jz - self.Jxz**2
-        g1 = self.Jxz*(self.Jx - self.Jy + self.Jz)
-        g2 = self.Jz * (self.Jz - self.Jy) + self.Jxz**2
+        g1 = self.Jxz*(self.Jx - self.Jy + self.Jz) / g
+        g2 = self.Jz * (self.Jz - self.Jy) + self.Jxz**2 / g
         g3 = self.Jz / g
         g4 = self.Jxz / g
         g5 = (self.Jz - self.Jx) / self.Jy
