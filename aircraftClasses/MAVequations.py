@@ -71,10 +71,9 @@ class MAVEOM(AirCraftDrawing):
         dpNEDdt = np.matmul(R,[u,v,w])
         
         # Eq 3.15 Translational Dynamics
-        R = [r * v - q * w,
-             p * w - r * u,
-             q * u - p * v]
-        duvwdt = R + [fx/self.mass,fy/self.mass,fz/self.mass]
+        duvwdt = [r * v - q * w + fx/self.mass,
+                  p * w - r * u + fy/self.mass,
+                  q * u - p * v + fz/self.mass]
 
         # Eq 3.16 Rotational Kinematics
         R = [[1, np.sin(phi)*np.tan(th), np.cos(phi)*np.tan(th)],
@@ -83,9 +82,9 @@ class MAVEOM(AirCraftDrawing):
         deuldt = np.matmul(R,[p,q,r])
 
         # Eq 3.17 Rotational Dynamics
-        g = self.Jx*self.Jz - self.Jxz**2
-        g1 = self.Jxz*(self.Jx - self.Jy + self.Jz) / g
-        g2 = self.Jz * (self.Jz - self.Jy) + self.Jxz**2 / g
+        g = self.Jx * self.Jz - self.Jxz**2
+        g1 = self.Jxz * (self.Jx - self.Jy + self.Jz) / g
+        g2 = (self.Jz * (self.Jz - self.Jy) + self.Jxz**2) / g
         g3 = self.Jz / g
         g4 = self.Jxz / g
         g5 = (self.Jz - self.Jx) / self.Jy
@@ -93,13 +92,9 @@ class MAVEOM(AirCraftDrawing):
         g7 = ((self.Jx - self.Jy) * self.Jx + self.Jxz**2)/g
         g8 = self.Jx / g
 
-        R1 = [g1 * p * q - g2 * q * r,
-              g5 * p * r - g6 * (p**2 - r**2),
-              g7 * p * q - g1 * q * r]
-        R2 = [g3 * l + g4 * n,
-              m / self.Jy,
-              g4 * l + g8 * n]
-        dpqrdt = np.add(R1,R2).tolist()
+        dpqrdt = [g1 * p * q - g2 * q * r + g3 * l + g4 * n,
+              g5 * p * r - g6 * (p**2 - r**2) + m / self.Jy,
+                  g7 * p * q - g1 * q * r + g4 * l + g8 * n]
 
         xdot = [dpNEDdt[0], dpNEDdt[1], dpNEDdt[2], duvwdt[0], duvwdt[1], duvwdt[2], 
                 deuldt[0], deuldt[1], deuldt[2], dpqrdt[0], dpqrdt[1], dpqrdt[2]]

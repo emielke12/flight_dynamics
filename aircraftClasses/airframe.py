@@ -2,6 +2,7 @@ from mpl_toolkits.mplot3d import Axes3D as a3
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection as pc
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
+from Tkinter import *
 import matplotlib.animation as animation
 import numpy as np
 import time,sys
@@ -25,6 +26,7 @@ class AirCraftDrawing():
 
         # Make Figure
         self.bounds = 30
+        self.bound_list = [3.0,3.0,3.0]
         self.make_figure()
         
         # Animation Values
@@ -44,12 +46,9 @@ class AirCraftDrawing():
         self.init_x = 0.0
         self.init_y = 0.0
         self.init_z = 0.0
-
-
-
+        
     def make_figure(self,real_time = True):
         # Figure
-        plt.close('all')
         self.fig = plt.figure(figsize=(10,10)) # Figure Window size
         self.ax = a3(self.fig) # 3d axis
         self.ax.set_xbound(-self.bounds,self.bounds) # Axis bounds
@@ -61,40 +60,47 @@ class AirCraftDrawing():
         self.ax.invert_yaxis() # North east down view
         if real_time == True:
             self.fig.show()
+            self.root = Tk()
+            ele = Scale(self.root,from_=-40.0,to=40.0,orient=HORIZONTAL,label='Elevator',resolution=0.01)
+            ele.pack()
+            ail = Scale(self.root,from_=-40.0, to=40.0,orient=HORIZONTAL,label='Aileron',resolution=0.01)
+            ail.pack()
+            rud = Scale(self.root,from_=-40.0, to=40.0,orient=HORIZONTAL,label='Rudder',resolution=0.01)
+            rud.pack()
+            thr = Scale(self.root,from_=0.0, to=1.0,orient=HORIZONTAL,label='Thrust',resolution=0.01)
+            thr.pack()
+            self.sliders = [ele,ail,rud,thr]
+                                                    
 
-        
+
     def draw_line(self,px,py,pz,R,t,colour='r',lw = '5'):
         ''' Draw a line for axes'''
+        # Rotate
         new = np.split(np.dot(R,np.column_stack((np.column_stack((px,py)),pz)).T),3)
+
+        # Translate
         x = np.add(new[0][0],t[0])
         y = np.add(new[1][0],t[1])
         z = np.add(new[2][0],t[2])
+
+        # Add to collection
         verts = [zip(x,y,z)]
         self.ax.add_collection3d(pc(verts,edgecolors=colour,linewidth=lw))
-
         
     def draw_2dpolygon(self,px,py,pz,R,t,colour='#929591'):
         '''Draw a polygon with inputs px,py,pz which are a list of vertices
         Rotate the points according to the specified rotation matrix R
         Translate the points according to the translation vector t
         Give polygon a color according to 'r' '''
-        # # Uncomment to see erroneous translation before rotation
-        # px = np.add(px,t[0])
-        # py = np.add(py,t[1])
-        # pz = np.add(pz,t[2])
-
+        # Rotate
         new = np.split(np.dot(R,np.column_stack((np.column_stack((px,py)),pz)).T),3)
 
-        # Uncomment to see correct rotation before translation
+        # Translate
         x = np.add(new[0][0],t[0])
         y = np.add(new[1][0],t[1])
         z = np.add(new[2][0],t[2])
-        
-        # # Uncomment to see erroneous translation before rotation
-        # x = new[0][0]
-        # y = new[1][0]
-        # z = new[2][0]
 
+        # Add to collection
         verts = [zip(x,y,z)]
         self.ax.add_collection3d(pc(verts,facecolors=colour,edgecolors='k'))
 
@@ -151,8 +157,9 @@ class AirCraftDrawing():
 
     def create_plane(self,eul = [0,0,0],t = [0,0,0]):
         ''' Create plane drawing and rotate accoring to euler angle inputs in eul
-        Translate plan according to inputs in t'''        
-        R = self.get_rotation_matrix(eul) # Get rotation matrix from euler angles
+        Translate plan according to inputs in t'''
+        # Get rotation matrix from euler angles
+        R = self.get_rotation_matrix(eul) 
 
         # Clear previous drawing and label axes
         self.ax.clear() 
@@ -182,7 +189,7 @@ class AirCraftDrawing():
         return R
 
     #--------------------------------------------------------------------------#
-    # These functions do the animation
+    # These functions do the animation post calculation
     def animate(self,i):
         ''' animation function'''
         if i < len(self.ang[0]):
@@ -203,20 +210,18 @@ class AirCraftDrawing():
         plt.show(block=False)
         plt.close()
 
-
-    def plot_update(self,eul,pos):
+    #-------------------------------------------------------------------------------#
+    # These functions are for drawing real time
+    def draw_update(self,eul,pos):
         '''Input euler angles and positions one time step at a time to plot real-time'''
         self.create_plane(eul,pos)
-        # Edits Axes So I don't have to zoom out every time. Not sure if I want it
-        if abs(pos[2])>self.bounds+5 or abs(pos[1])>self.bounds+5 or abs(pos[0])>self.bounds+5: 
-            self.bounds += 10
-            self.ax.set_xbound(-self.bounds,self.bounds)
-            self.ax.set_ybound(-self.bounds,self.bounds)
-            self.ax.set_zbound(-self.bounds,self.bounds)
-
+        # Edits Axes To follow Plane around at close range
+        self.ax.set_xbound(-self.bound_list[0] + pos[0],self.bound_list[0] + pos[0])
+        self.ax.set_ybound(-self.bound_list[1] + pos[1],self.bound_list[1] + pos[1])
+        self.ax.set_zbound(-self.bound_list[2] + pos[2],self.bound_list[2] + pos[2])
         
     # ------------------------------------------------------------------------------#
-    # If not using Tkinter but just inputting calculated euler angles and position
+    # If inputting post process calculated euler angles and position
     def input_goal(self,euler,positions,single_position = False):
         '''Inputs:
         euler_angles: vector of euler angles in order psi, theta, phi
@@ -248,25 +253,25 @@ class AirCraftDrawing():
         self.init_z = deepcopy(self.z)
 
 
-    def slider_goal(self):
-        # Desired euler angles and positions here (from sliders)
-        self.ang = [np.linspace(self.init_phi,self.phi,self.n_frames),
-                    np.linspace(self.init_th,self.th,self.n_frames),
-                    np.linspace(self.init_psi,self.psi,self.n_frames)]
-        self.pos = [np.linspace(self.init_x,self.x,self.n_frames),
-                    np.linspace(self.init_y,self.y,self.n_frames),
-                    np.linspace(self.init_z,self.z,self.n_frames)]
+    # def slider_goal(self):
+    #     # Desired euler angles and positions here (from sliders)
+    #     self.ang = [np.linspace(self.init_phi,self.phi,self.n_frames),
+    #                 np.linspace(self.init_th,self.th,self.n_frames),
+    #                 np.linspace(self.init_psi,self.psi,self.n_frames)]
+    #     self.pos = [np.linspace(self.init_x,self.x,self.n_frames),
+    #                 np.linspace(self.init_y,self.y,self.n_frames),
+    #                 np.linspace(self.init_z,self.z,self.n_frames)]
 
-        # Run Animation
-        self.show_animation()
+    #     # Run Animation
+    #     self.show_animation()
                     
-        # Now set init as current
-        self.init_psi = deepcopy(self.psi)
-        self.init_th = deepcopy(self.th)
-        self.init_phi = deepcopy(self.phi)
-        self.init_x = deepcopy(self.x)
-        self.init_y = deepcopy(self.y)
-        self.init_z = deepcopy(self.z)
+    #     # Now set init as current
+    #     self.init_psi = deepcopy(self.psi)
+    #     self.init_th = deepcopy(self.th)
+    #     self.init_phi = deepcopy(self.phi)
+    #     self.init_x = deepcopy(self.x)
+    #     self.init_y = deepcopy(self.y)
+    #     self.init_z = deepcopy(self.z)
                     
 
 # # Create aircraft Instance
