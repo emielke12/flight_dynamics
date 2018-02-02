@@ -26,7 +26,7 @@ class AirCraftDrawing():
 
         # Make Figure
         self.bounds = 30
-        self.bound_list = [3.0,3.0,3.0]
+        self.bound_list = [10.0,10.0,10.0]
         self.make_figure()
         
         # Animation Values
@@ -60,16 +60,16 @@ class AirCraftDrawing():
         self.ax.invert_yaxis() # North east down view
         if real_time == True:
             self.fig.show()
-            self.root = Tk()
-            ele = Scale(self.root,from_=-40.0,to=40.0,orient=HORIZONTAL,label='Elevator',resolution=0.01)
-            ele.pack()
-            ail = Scale(self.root,from_=-40.0, to=40.0,orient=HORIZONTAL,label='Aileron',resolution=0.01)
-            ail.pack()
-            rud = Scale(self.root,from_=-40.0, to=40.0,orient=HORIZONTAL,label='Rudder',resolution=0.01)
-            rud.pack()
-            thr = Scale(self.root,from_=0.0, to=1.0,orient=HORIZONTAL,label='Thrust',resolution=0.01)
-            thr.pack()
-            self.sliders = [ele,ail,rud,thr]
+            # self.root = Tk()
+            # ele = Scale(self.root,from_=-40.0,to=40.0,orient=HORIZONTAL,label='Elevator',resolution=0.01)
+            # ele.pack()
+            # ail = Scale(self.root,from_=-40.0, to=40.0,orient=HORIZONTAL,label='Aileron',resolution=0.01)
+            # ail.pack()
+            # rud = Scale(self.root,from_=-40.0, to=40.0,orient=HORIZONTAL,label='Rudder',resolution=0.01)
+            # rud.pack()
+            # thr = Scale(self.root,from_=0.0, to=3.0,orient=HORIZONTAL,label='Thrust',resolution=0.01)
+            # thr.pack()
+            # self.sliders = [ele,ail,rud,thr]
                                                     
 
 
@@ -214,11 +214,13 @@ class AirCraftDrawing():
     # These functions are for drawing real time
     def draw_update(self,eul,pos):
         '''Input euler angles and positions one time step at a time to plot real-time'''
-        self.create_plane(eul,pos)
         # Edits Axes To follow Plane around at close range
         self.ax.set_xbound(-self.bound_list[0] + pos[0],self.bound_list[0] + pos[0])
         self.ax.set_ybound(-self.bound_list[1] + pos[1],self.bound_list[1] + pos[1])
         self.ax.set_zbound(-self.bound_list[2] + pos[2],self.bound_list[2] + pos[2])
+        
+        # Plot
+        self.create_plane(eul,pos)
         
     # ------------------------------------------------------------------------------#
     # If inputting post process calculated euler angles and position

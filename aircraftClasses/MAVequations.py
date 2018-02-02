@@ -60,6 +60,30 @@ class MAVEOM(AirCraftDrawing):
         self.C_ldeltar = 0.105
         self.C_ndeltar = -0.032
 
+        g = self.Jx * self.Jz - self.Jxz**2
+        self.g1 = self.Jxz * (self.Jx - self.Jy + self.Jz) / g
+        self.g2 = (self.Jz * (self.Jz - self.Jy) + self.Jxz**2) / g
+        self.g3 = self.Jz / g
+        self.g4 = self.Jxz / g
+        self.g5 = (self.Jz - self.Jx) / self.Jy
+        self.g6 = self.Jxz / self.Jy
+        self.g7 = ((self.Jx - self.Jy) * self.Jx + self.Jxz**2)/g
+        self.g8 = self.Jx / g
+
+        self.C_p0 =  self.g3 * self.C_l0 + self.g4 * self.C_n0
+        self.C_pbeta = self.g3 * self.C_lbeta + self.g4 * self.C_nbeta
+        self.C_pp = self.g3 * self.C_lp + self.g4 * self.C_np
+        self.C_pr = self.g3 * self.C_lr + self.g4 * self.C_nr
+        self.C_pdeltaa = self.g3 * self.C_ldeltaa + self.g4 * self.C_ndeltaa
+        self.C_pdeltar = self.g3 * self.C_ldeltar + self.g4 * self.C_ndeltar
+        self.C_r0 = self.g4 * self.C_l0 + self.g8 * self.C_n0
+        self.C_rbeta = self.g4 * self.C_lbeta + self.g8 * self.C_nbeta
+        self.C_rp = self.g4 * self.C_lp + self.g8 * self.C_np
+        self.C_rr = self.g4 * self.C_lr + self.g8 * self.C_nr
+        self.C_rdeltaa = self.g4 * self.C_ldeltaa + self.g8 * self.C_ndeltaa
+        self.C_rdeltar = self.g4 * self.C_ldeltar + self.g8 * self.C_ndeltar
+
+
     def eom(self,x,t,fx,fy,fz,l,m,n):
         # States
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
