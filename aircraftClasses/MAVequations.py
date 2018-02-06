@@ -106,20 +106,11 @@ class MAVEOM(AirCraftDrawing):
         deuldt = np.matmul(R,[p,q,r])
 
         # Eq 3.17 Rotational Dynamics
-        g = self.Jx * self.Jz - self.Jxz**2
-        g1 = self.Jxz * (self.Jx - self.Jy + self.Jz) / g
-        g2 = (self.Jz * (self.Jz - self.Jy) + self.Jxz**2) / g
-        g3 = self.Jz / g
-        g4 = self.Jxz / g
-        g5 = (self.Jz - self.Jx) / self.Jy
-        g6 = self.Jxz / self.Jy
-        g7 = ((self.Jx - self.Jy) * self.Jx + self.Jxz**2)/g
-        g8 = self.Jx / g
+        dpqrdt = [self.g1 * p * q - self.g2 * q * r + self.g3 * l + self.g4 * n,
+                  self.g5 * p * r - self.g6 * (p**2 - r**2) + m / self.Jy,
+                  self.g7 * p * q - self.g1 * q * r + self.g4 * l + self.g8 * n]
 
-        dpqrdt = [g1 * p * q - g2 * q * r + g3 * l + g4 * n,
-              g5 * p * r - g6 * (p**2 - r**2) + m / self.Jy,
-                  g7 * p * q - g1 * q * r + g4 * l + g8 * n]
-
+        # Total Equation of motion outputs
         xdot = [dpNEDdt[0], dpNEDdt[1], dpNEDdt[2], duvwdt[0], duvwdt[1], duvwdt[2], 
                 deuldt[0], deuldt[1], deuldt[2], dpqrdt[0], dpqrdt[1], dpqrdt[2]]
         return xdot

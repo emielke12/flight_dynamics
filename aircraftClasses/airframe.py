@@ -33,19 +33,19 @@ class AirCraftDrawing():
         self.n_frames = 400
         self.interv = 10
         
-        # Visualization start points
-        self.phi = 0.0
-        self.th = 0.0
-        self.psi = 0.0
-        self.x = 0.0
-        self.y = 0.0
-        self.z = 0.0
-        self.init_phi = 0.0
-        self.init_th = 0.0
-        self.init_psi = 0.0
-        self.init_x = 0.0
-        self.init_y = 0.0
-        self.init_z = 0.0
+        # # Visualization start points
+        # self.phi = 0.0
+        # self.th = 0.0
+        # self.psi = 0.0
+        # self.x = 0.0
+        # self.y = 0.0
+        # self.z = 0.0
+        # self.init_phi = 0.0
+        # self.init_th = 0.0
+        # self.init_psi = 0.0
+        # self.init_x = 0.0
+        # self.init_y = 0.0
+        # self.init_z = 0.0
         
     def make_figure(self,real_time = True):
         # Figure
@@ -222,37 +222,37 @@ class AirCraftDrawing():
         # Plot
         self.create_plane(eul,pos)
         
-    # ------------------------------------------------------------------------------#
-    # If inputting post process calculated euler angles and position
-    def input_goal(self,euler,positions,single_position = False):
-        '''Inputs:
-        euler_angles: vector of euler angles in order psi, theta, phi
-        positions: vector of positions in order x, y, z'''
-        self.phi = euler[0]
-        self.th = euler[1]
-        self.psi = euler[2]
-        self.x = positions[0]
-        self.y = positions[1]
-        self.z = positions[2]
+    # # ------------------------------------------------------------------------------#
+    # # If inputting post process calculated euler angles and position
+    # def input_goal(self,euler,positions,single_position = False):
+    #     '''Inputs:
+    #     euler_angles: vector of euler angles in order psi, theta, phi
+    #     positions: vector of positions in order x, y, z'''
+    #     self.phi = euler[0]
+    #     self.th = euler[1]
+    #     self.psi = euler[2]
+    #     self.x = positions[0]
+    #     self.y = positions[1]
+    #     self.z = positions[2]
 
-        if single_position == True:
-            self.slider_goal()
-        else:
-            self.calculated_trajectory()
+    #     if single_position == True:
+    #         self.slider_goal()
+    #     else:
+    #         self.calculated_trajectory()
 
-    def calculated_trajectory(self):
-        self.ang = [self.phi,self.th,self.psi]
-        self.pos = [self.x,self.y,self.z]
-        self.show_animation()
-        # self.plot_update()
+    # def calculated_trajectory(self):
+    #     self.ang = [self.phi,self.th,self.psi]
+    #     self.pos = [self.x,self.y,self.z]
+    #     self.show_animation()
+    #     # self.plot_update()
 
-        # Now set init as current
-        self.init_psi = deepcopy(self.psi)
-        self.init_th = deepcopy(self.th)
-        self.init_phi = deepcopy(self.phi)
-        self.init_x = deepcopy(self.x)
-        self.init_y = deepcopy(self.y)
-        self.init_z = deepcopy(self.z)
+    #     # Now set init as current
+    #     self.init_psi = deepcopy(self.psi)
+    #     self.init_th = deepcopy(self.th)
+    #     self.init_phi = deepcopy(self.phi)
+    #     self.init_x = deepcopy(self.x)
+    #     self.init_y = deepcopy(self.y)
+    #     self.init_z = deepcopy(self.z)
 
 
     # def slider_goal(self):

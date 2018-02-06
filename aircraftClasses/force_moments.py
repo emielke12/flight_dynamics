@@ -45,6 +45,7 @@ class MAVForces(MAVEOM):
         self.Va = V_a
         self.alpha = alpha
         self.beta = beta
+        self.chi = psi + beta # No Wind
 
         # Compute external forces and torques on aircraft
         C_X = self.calc_Cx(alpha)
@@ -144,11 +145,11 @@ class MAVForces(MAVEOM):
         H_w = sigs.TransferFunction(H_w_num,H_w_den)
 
         # Frequency Response
-        H_u = H_u.to_ss()
+        H_u = H_u.to_ss().to_discrete(dt)
         H_u = sigs.lti(H_u.A,H_u.B,H_u.C,H_u.D)
-        H_v = H_v.to_ss()
+        H_v = H_v.to_ss().to_discrete(dt)
         H_v = sigs.lti(H_v.A,H_v.B,H_v.C,H_v.D)
-        H_w = H_w.to_ss()
+        H_w = H_w.to_ss().to_discrete(dt)
         H_w = sigs.lti(H_w.A,H_w.B,H_w.C,H_w.D)
 
         t = np.linspace(0,dt,2)
