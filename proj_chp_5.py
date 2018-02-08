@@ -6,7 +6,7 @@ def ctrl_c(meq,x0):
     wind = [0.0,0.0,0.0,0.0,0.0,0.0]
 
     # Desired Trim
-    trim = [x0[3],0.0 * np.pi/180.0,5e20] # Va, gamma, R
+    trim = [x0[3],0.0 * np.pi/180.0,5e60] # Va, gamma, R
 
     # Solution empty vector
     sols = [[],[],[],[],[],[],[],[],[],[],[],[]]
@@ -17,24 +17,65 @@ def ctrl_c(meq,x0):
     # Optimize Deltas
     meq.call_opt(star,x0,trim,wind)
     x0 = meq.update_init_conds
+    # print 'Initial Conditions: ',x0,'\n'
+    # print 'Elevator, Aileron, Rudder, Thrust: ',meq.deltas
 
     # Get Transfer Functions
     meq.get_transfer_functions(x0)
+    # print meq.T_phi_deltaa
     
     # Get SS Matrices
-    meq.get_linearized_ss(x0,wind)
-    w,v = np.linalg.eig(meq.A_lon)
-    print meq.T_phi_deltaa,'\n\n'
-    print meq.A_lon,'\n\n'
-    print meq.B_lon,'\n\n'
-    print w
-    raw_input()
+    meq.get_numerical_ss(x0)
+    # print 'A_lon:\t',meq.A_lon,'\n'
+    # print 'B_lon:\t',meq.B_lon,'\n'
+    # print 'Eig A_lon:\t',meq.eig_lon,'\n'
+    # print 'Eig A_lat:\t',meq.eig_lat,'\n'
+
+    # raw_input()
+    
+    # print meq.A_lat
+    # print meq.B_lat
+    # raw_input()
 
 
     try:
+        counter = 0
+        use = 'dutch roll'
         while True:
             # Calculate Wind Values
             # wind[3],wind[4],wind[5] = meq.calc_dryden_gust(0.03)
+
+            # Input Impulse or Doublet
+            if use == 'phugoid':
+                if counter == 100:
+                    imp = [-5.0 * np.pi / 180.0, 0, 0, 0]
+                    meq.deltas = np.add(meq.deltas,imp).tolist()
+                elif counter == 116:
+                    imp = [5.0 * np.pi / 180.0, 0, 0, 0]
+                    meq.deltas = np.add(meq.deltas,imp).tolist()
+            elif use == 'dutch roll':
+                if counter == 100:
+                    doub = [0, 0, 25 * np.pi / 180.0, 0]
+                    meq.deltas = np.add(meq.deltas,doub).tolist()    
+                elif counter == 108:
+                    doub = [0, 0, -50 * np.pi / 180.0, 0]
+                    meq.deltas = np.add(meq.deltas,doub).tolist()
+                elif counter == 116:
+                    doub = [0, 0, 25 * np.pi / 180.0, 0]
+                    meq.deltas = np.add(meq.deltas,doub).tolist()
+            elif use == 'spiral':
+                if counter == 100:
+                    doub = [0, 25 * np.pi / 180.0, 0, 0]
+                    meq.deltas = np.add(meq.deltas,doub).tolist()    
+                elif counter == 108:
+                    doub = [0, -50 * np.pi / 180.0, 0, 0]
+                    meq.deltas = np.add(meq.deltas,doub).tolist()
+                elif counter == 116:
+                    doub = [0, 25 * np.pi / 180.0, 0, 0]
+                    meq.deltas = np.add(meq.deltas,doub).tolist()
+            else:
+                pass
+
 
             # Calculate Force, Airspeed, alpha, beta
             fx,fy,fz,l,m,n,va,alpha,beta,wn,we,wd = meq.force_calc(x0,meq.deltas,wind)
@@ -59,6 +100,9 @@ def ctrl_c(meq,x0):
 
             # Update initial state for ODE
             x0 = sol[-1,:]
+
+            # Update counter
+            counter += 1
             
     except KeyboardInterrupt:
         plt.close('all')
@@ -71,7 +115,7 @@ if __name__ == "__main__":
     # Initial Conditions
     pn0 = 0
     pe0 = 0
-    pd0 = -300.0
+    pd0 = 0#-300.0
     u0 = 17.0
     v0 = 0
     w0 = 0.0
