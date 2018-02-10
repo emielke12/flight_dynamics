@@ -42,6 +42,7 @@ class MAVForces(MAVEOM):
         V_a = np.linalg.norm(V_ab)
         alpha = np.arctan(V_ab[2]/V_ab[0])
         beta = np.arcsin(V_ab[1]/V_a)
+        self.Vg = np.linalg.norm([u,v,w])
         self.Va = V_a
         self.alpha = alpha
         self.beta = beta

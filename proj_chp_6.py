@@ -17,6 +17,8 @@ def ctrl_c(meq,x0):
     # Optimize Deltas
     meq.call_opt(star,x0,trim,wind)
     x0 = meq.update_init_conds
+    print "It's working!"
+    raw_input()
 
     try:
         while True:
