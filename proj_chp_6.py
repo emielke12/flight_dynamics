@@ -1,5 +1,6 @@
-from aircraftClasses.mavTrim import *
+from aircraftClasses.autoPilot import *
 import sys
+from scipy import signal
 
 def ctrl_c(meq,x0):
     # Initial Wind Values
@@ -17,13 +18,24 @@ def ctrl_c(meq,x0):
     # Optimize Deltas
     meq.call_opt(star,x0,trim,wind)
     x0 = meq.update_init_conds
-    print "It's working!"
-    raw_input()
+    meq.get_transfer_functions(x0)
+
+    # # Desired Roll Angle
+    # phi_d = 15.0 * np.pi/180.0
+
+    # Desired Course Angle
+    chi_d = 20.0 * np.pi / 180.0
+
+    counter = 0
 
     try:
         while True:
             # Calculate Wind Values
             # wind[3],wind[4],wind[5] = meq.calc_dryden_gust(0.03)
+
+            if counter > 20:
+                phi_d = meq.course_hold(x0,chi_d,0.03)
+                meq.roll_attitude(x0,phi_d,0.03)
 
             # Calculate Force, Airspeed, alpha, beta
             fx,fy,fz,l,m,n,va,alpha,beta,wn,we,wd = meq.force_calc(x0,meq.deltas,wind)
@@ -50,21 +62,25 @@ def ctrl_c(meq,x0):
             x0 = sol[-1,:]
 
             # Update counter
+            print counter
             counter += 1
             
     except KeyboardInterrupt:
+        print meq.omega_n_phi
         plt.close('all')
         meq.plot_states_post(np.transpose(sols))
+        meq.ax7.axhline(y=phi_d,color='k',linestyle='--')
+        plt.show()
 
 if __name__ == "__main__":
     # Instantiate Class
-    meq = Trim()
+    meq = autoPilot()
     
     # Initial Conditions
     pn0 = 0
     pe0 = 0
     pd0 = 0#-300.0
-    u0 = 17.0
+    u0 = 20.0
     v0 = 0
     w0 = 0.0
     phi0 = 0

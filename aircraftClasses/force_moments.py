@@ -1,5 +1,6 @@
 from MAVequations import *
 import scipy.signal as sigs
+from copy import deepcopy
 
 class MAVForces(MAVEOM):
     def __init__(self):
@@ -39,6 +40,9 @@ class MAVForces(MAVEOM):
         V_ab = [u - V_wb[0],
                 v - V_wb[1],
                 w - V_wb[2]]
+        V_gb = [u,
+                v,
+                w]
         V_a = np.linalg.norm(V_ab)
         alpha = np.arctan(V_ab[2]/V_ab[0])
         beta = np.arcsin(V_ab[1]/V_a)
@@ -46,7 +50,17 @@ class MAVForces(MAVEOM):
         self.Va = V_a
         self.alpha = alpha
         self.beta = beta
-        self.chi = psi + beta # No Wind
+
+        # Course angle
+        Vn = V_a * np.cos(psi) + V_wb[0]
+        Ve = V_a * np.sin(psi) + V_wb[1]
+        # self.chi = psi + beta# No Wind
+        if Ve == 0.0:
+            self.chi = psi + beta
+        else:
+            self.chi = np.arctan(Vn / Ve)
+        self.chi_crab = deepcopy(self.chi) - psi
+
 
         # Compute external forces and torques on aircraft
         C_X = self.calc_Cx(alpha)
@@ -271,6 +285,6 @@ class MAVForces(MAVEOM):
         self.ax12.plot(states[:,11])
 
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         
         
