@@ -6,12 +6,18 @@ class Trim(MAVForces):
     def __init(self):
         MAVForces.__init__(self)
 
+    def variables(self):
+        self.trim = [20.0,0.0,5e60]
         self.deltas = [0,0,0,0]
         self.update_init_conds = [0,0,0,0,0,0,0,0,0,0,0,0]
+        self.star = [0.0,0.0,0.0]
 
-    def call_opt(self,star,x,trim,wind):
-        self.Va_trim,self.gamma_trim,self.R_trim = trim
-        minimum = opt.fmin(self.trim_opt,star,args=(x,trim,wind))
+    def call_opt(self,x,wind):
+
+        self.Va_trim,self.gamma_trim,self.R_trim = self.trim
+        minimum = opt.fmin(self.trim_opt,self.star,args=(x,self.trim,wind))
+        self.delta_trim = self.deltas
+        return self.update_init_conds
 
     def trim_opt(self,star,x,trim,wind):
         ''' 
@@ -79,9 +85,9 @@ class Trim(MAVForces):
         self.a_beta1 = -0.5 * self.rho * self.Va * self.S * self.C_Ybeta / self.mass
         self.a_beta2 = 0.5 * self.rho * self.Va * self.S * self.C_Ydeltar / self.mass
 
-        self.a_theta1 = -0.5 * self.rho * self.Va**2 * self.c * self.S * self.C_mq * self.c / (self.Jy * 2 * self.Va_trim)
-        self.a_theta2 = -0.5 * self.rho * self.Va**2 * self.c * self.S * self.C_malpha / self.Jy
-        self.a_theta3 = 0.5 * self.rho * self.Va**2 * self.c * self.S * self.C_mdeltae / self.Jy
+        self.a_th1 = -0.5 * self.rho * self.Va**2 * self.c * self.S * self.C_mq * self.c / (self.Jy * 2 * self.Va_trim)
+        self.a_th2 = -0.5 * self.rho * self.Va**2 * self.c * self.S * self.C_malpha / self.Jy
+        self.a_th3 = 0.5 * self.rho * self.Va**2 * self.c * self.S * self.C_mdeltae / self.Jy
 
         self.a_v1 = self.rho * self.Va_trim * self.S / self.mass * (self.C_D0 + self.C_Dalpha * self.alpha_trim + self.C_Ddeltae * self.deltas[0]) + self.rho * self.S_prop / self.mass * self.C_prop * self.Va_trim
         self.a_v2 = self.rho * self.S_prop / self.mass * self.C_prop * self.k_motor**2 * self.deltas[3]
@@ -90,7 +96,7 @@ class Trim(MAVForces):
         # Transfer Functions
         self.T_phi_deltaa = sigs.TransferFunction([self.a_phi2],[1,self.a_phi1,0])
         self.T_chi_phi = sigs.TransferFunction([self.g / self.Va_trim],[1,0])
-        self.T_th_deltae = sigs.TransferFunction([self.a_theta3],[1,self.a_theta1,self.a_theta2])
+        self.T_th_deltae = sigs.TransferFunction([self.a_th3],[1,self.a_th1,self.a_th2])
         self.T_h_theta = sigs.TransferFunction([self.Va_trim],[1,0])
         self.T_h_Va = sigs.TransferFunction([th],[1,0])
         self.T_Va_deltat = sigs.TransferFunction([self.a_v2],[1,self.a_v1])

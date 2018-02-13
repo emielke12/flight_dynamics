@@ -8,6 +8,9 @@ class MAVEOM(AirCraftDrawing):
         # Animation Class Inheritance
         AirCraftDrawing.__init__(self)
 
+        # Time Step
+        self.dt = 0.03
+
         # Plane Parameters
         self.mass = 13.5
         self.g = 9.81

@@ -50,16 +50,11 @@ class MAVForces(MAVEOM):
         self.Va = V_a
         self.alpha = alpha
         self.beta = beta
+        # self.chi = psi + beta
 
-        # Course angle
-        Vn = V_a * np.cos(psi) + V_wb[0]
-        Ve = V_a * np.sin(psi) + V_wb[1]
-        # self.chi = psi + beta# No Wind
-        if Ve == 0.0:
-            self.chi = psi + beta
-        else:
-            self.chi = np.arctan(Vn / Ve)
-        self.chi_crab = deepcopy(self.chi) - psi
+        # anga2b = np.arccos((u*V_ab[0] + v*V_ab[1])/(np.linalg.norm(V_gb[0:2]) * np.linalg.norm(V_ab[0:2])))
+        self.chi = psi + beta# + anga2b
+
 
 
         # Compute external forces and torques on aircraft
@@ -240,21 +235,24 @@ class MAVForces(MAVEOM):
         self.state_fig.tight_layout()
         self.state_fig.canvas.draw()
 
-    def plot_states_post(self,states):
+    def plot_all_post(self,states,alpha,beta,va):
 
         self.state_fig = plt.figure(figsize=(20,10))
-        self.ax1 = self.state_fig.add_subplot(431)
-        self.ax2 = self.state_fig.add_subplot(432)
-        self.ax3 = self.state_fig.add_subplot(433)
-        self.ax4 = self.state_fig.add_subplot(434)
-        self.ax5 = self.state_fig.add_subplot(435)
-        self.ax6 = self.state_fig.add_subplot(436)
-        self.ax7 = self.state_fig.add_subplot(437)
-        self.ax8 = self.state_fig.add_subplot(438)
-        self.ax9 = self.state_fig.add_subplot(439)
-        self.ax10 = self.state_fig.add_subplot(4,3,10)
-        self.ax11 = self.state_fig.add_subplot(4,3,11)
-        self.ax12 = self.state_fig.add_subplot(4,3,12)
+        self.ax1 = self.state_fig.add_subplot(531)
+        self.ax2 = self.state_fig.add_subplot(532)
+        self.ax3 = self.state_fig.add_subplot(533)
+        self.ax4 = self.state_fig.add_subplot(534)
+        self.ax5 = self.state_fig.add_subplot(535)
+        self.ax6 = self.state_fig.add_subplot(536)
+        self.ax7 = self.state_fig.add_subplot(537)
+        self.ax8 = self.state_fig.add_subplot(538)
+        self.ax9 = self.state_fig.add_subplot(539)
+        self.ax10 = self.state_fig.add_subplot(5,3,10)
+        self.ax11 = self.state_fig.add_subplot(5,3,11)
+        self.ax12 = self.state_fig.add_subplot(5,3,12)
+        self.ax13 = self.state_fig.add_subplot(5,3,13)
+        self.ax14 = self.state_fig.add_subplot(5,3,14)
+        self.ax15 = self.state_fig.add_subplot(5,3,15)
 
         # Set Labels
         self.ax1.set_ylabel(r'$P_n$ (m)')
@@ -265,10 +263,13 @@ class MAVForces(MAVEOM):
         self.ax6.set_ylabel('w (m/s)')
         self.ax7.set_ylabel(r'$\phi$ (rad)')
         self.ax8.set_ylabel(r'$\theta$ (rad)')
-        self.ax9.set_ylabel(r'$\psi$ (rad)')
+        self.ax9.set_ylabel(r'$\chi$/$\psi$ (rad)')
         self.ax10.set_ylabel('p (rad/s)')
         self.ax11.set_ylabel('q (rad/s)')
         self.ax12.set_ylabel('r (rad/s)')
+        self.ax13.set_ylabel(r'$\alpha$ (rad)')
+        self.ax14.set_ylabel(r'$\beta$ (rad)')
+        self.ax15.set_ylabel(r'$V_a$ (m/s)')
         
         # Plot States
         self.ax1.plot(states[:,0])
@@ -283,8 +284,10 @@ class MAVForces(MAVEOM):
         self.ax10.plot(states[:,9])
         self.ax11.plot(states[:,10])
         self.ax12.plot(states[:,11])
+        self.ax13.plot(alpha)
+        self.ax14.plot(beta)
+        self.ax15.plot(va)
 
         plt.tight_layout()
         # plt.show()
-        
         
