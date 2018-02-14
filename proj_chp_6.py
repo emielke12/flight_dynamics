@@ -9,24 +9,17 @@ def ctrl_c(meq,x0,wind):
     beta = []
     va = []
 
-    # Optimize Deltas
-    x0 = meq.call_opt(x0,wind)
-    meq.get_transfer_functions(x0)
-
     # Desired Roll Angle
-    phi_d = 0.0 * np.pi/180.0
+    phi_d = 10.0 * np.pi/180.0
 
     # Desired Course Angle
-    chi_d = 0.0 * np.pi / 180.0
-
-    # Desired Sideslip Angle
-    beta_d = deepcopy(meq.beta)
+    chi_d = 5.0 * np.pi / 180.0
 
     # Desired Pitch Angle
     th_d = 10.0 * np.pi / 180.0
 
     # Desired Altitude
-    h_d = 100.0
+    h_d = deepcopy(meq.h_hold)
 
     # Desired Velocity
     va_d = 30.0
@@ -36,17 +29,17 @@ def ctrl_c(meq,x0,wind):
     try:
         while True:
             # Calculate Wind Values
-            # wind[3],wind[4],wind[5] = meq.calc_dryden_gust(0.03)
+            # wind[3],wind[4],wind[5] = meq.calc_dryden_gust(meq.dt)
 
-            print meq.deltas[3]
             if counter > 20:
-                # meq.sideslip_hold(x0,beta_d,meq.dt)
-                # phi_d = meq.course_hold(x0,chi_d,meq.dt)
-                # meq.roll_attitude(x0,phi_d,meq.dt)
-                meq.airspeed_throttle(x0,va_d,meq.dt)
-            if counter > 20:
-                th_d = meq.altitude_hold(x0,h_d,meq.dt)
-                meq.pitch_hold(x0,th_d,meq.dt)
+                meq.sideslip_hold(x0,meq.dt)
+                phi_d = meq.course_hold(x0,chi_d,meq.dt)
+                meq.roll_attitude(x0,phi_d,meq.dt)
+                # meq.airspeed_throttle(x0,va_d,meq.dt)
+                # th_d = meq.altitude_hold(x0,h_d,meq.dt)
+                # th_d = meq.airspeed_pitch(x0,va_d,meq.dt)
+                # meq.pitch_hold(x0,th_d,meq.dt)
+                meq.mode(x0)
 
             # Calculate Force, Airspeed, alpha, beta
             fx,fy,fz,l,m,n,va_,alpha_,beta_,wn,we,wd = meq.force_calc(x0,meq.deltas,wind)
@@ -66,7 +59,7 @@ def ctrl_c(meq,x0,wind):
                 if j == 8:
                     sols[j][-1] = meq.chi
 
-            # Alpha Beta and Va
+            # Alpha Beta and Va Vectors for plotting
             alpha.append(alpha_)
             beta.append(beta_)
             va.append(va_)
@@ -88,19 +81,16 @@ def ctrl_c(meq,x0,wind):
         meq.ax7.axhline(y=phi_d,color='k',linestyle='--')
         meq.ax8.axhline(y=th_d,color='k',linestyle='--')
         meq.ax9.axhline(y=chi_d,color='k',linestyle='--')
-        meq.ax14.axhline(y=beta_d,color='k',linestyle='--')
+        meq.ax14.axhline(y=0.0,color='k',linestyle='--')
         meq.ax15.axhline(y=va_d,color='k',linestyle='--')
         plt.show()
 
-if __name__ == "__main__":
-    # Instantiate Class
-    meq = autoPilot()
-    
+if __name__ == "__main__":    
     # Initial Conditions
     pn0 = 0
     pe0 = 0
     pd0 = 0#-300.0
-    u0 = 20.0
+    u0 = 30.0
     v0 = 0
     w0 = 0.0
     phi0 = 0
@@ -112,13 +102,15 @@ if __name__ == "__main__":
 
     # Initial State Vector
     x0 = [pn0,pe0,pd0,u0,v0,w0,phi0,th0,psi0,p0,q0,r0]
-
+    
     # Initial Wind Vector
     wind = [0.0,0.0,0.0,0.0,0.0,0.0]
 
     # Desired Trim
-    meq.trim = [x0[3],0.0 * np.pi/180.0,5e60] # Va, gamma, R
-    meq.Va_0 = x0[3]
+    trim = [x0[3],0.0 * np.pi/180.0,5e60] # Va, gamma, R
+
+    # Instantiate Class
+    meq = autoPilot(x0,trim)
 
     #------------------------ RUNS UNTIL CTRL-C---------------------------------------#
     ctrl_c(meq,x0,wind)

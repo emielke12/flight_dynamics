@@ -16,7 +16,7 @@ class Trim(MAVForces):
 
         self.Va_trim,self.gamma_trim,self.R_trim = self.trim
         minimum = opt.fmin(self.trim_opt,self.star,args=(x,self.trim,wind))
-        self.delta_trim = self.deltas
+        self.delta_trim = deepcopy(self.deltas)
         return self.update_init_conds
 
     def trim_opt(self,star,x,trim,wind):
