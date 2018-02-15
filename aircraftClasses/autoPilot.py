@@ -40,8 +40,8 @@ class autoPilot(Trim):
         self.k_d_phi = (2 * self.zeta_phi * self.omega_n_phi - self.a_phi1) / self.a_phi2
 
         # Course
-        self.W_chi = 9.0
-        self.zeta_chi = 0.7
+        self.W_chi = 7.0
+        self.zeta_chi = 1.1
         self.omega_n_chi = 1 / self.W_chi * self.omega_n_phi
         self.k_p_chi = 2 * self.zeta_chi * self.omega_n_chi * self.Va_0 / self.g
         self.k_i_chi = self.omega_n_chi**2 * self.Va_0 / self.g
@@ -61,7 +61,7 @@ class autoPilot(Trim):
         self.K_dc_th = self.k_p_th * self.a_th3 / (self.a_th2 + self.k_p_th * self.a_th3)
 
         # Altitude
-        self.W_h = 40.0 
+        self.W_h = 30.0 
         self.zeta_h = 0.9
         self.omega_n_h = 1 / self.W_h * self.omega_n_th
         self.k_p_h = 2 * self.zeta_h * self.omega_n_h / (self.K_dc_th * self.Va_0)
@@ -75,7 +75,7 @@ class autoPilot(Trim):
         self.k_p_v2 = (self.a_v1 - 2 * self.zeta_v2 * self.omega_n_v2) / (self.K_dc_th * self.g)
 
         # Airspeed Throttle
-        self.zeta_v = 2.0 
+        self.zeta_v = 1.0 
         self.omega_n_v = 5.0
         self.k_p_v = (2 * self.zeta_v * self.omega_n_v - self.a_v1) / self.a_v2
         self.k_i_v = self.omega_n_v**2 / self.a_v2
@@ -145,7 +145,7 @@ class autoPilot(Trim):
     def course_hold(self,x,chi_c,Ts):        
         # PID Control Loop
         error = chi_c - self.chi
-        if abs(error) < self.phi_max:
+        if abs(error) < self.chi_max:
             self.I_course += Ts / 2 * (error + self.E_course)
         else:
             self.I_course = 0.0
@@ -161,7 +161,7 @@ class autoPilot(Trim):
             self.I_course += Ts / self.k_i_chi * (u - u_unsat)
 
         # u is phi_c
-        return u
+        self.roll_attitude(x,u,Ts)
 
     def sideslip_hold(self,x,Ts):
         # PID Control Loop
@@ -201,7 +201,7 @@ class autoPilot(Trim):
 
         # PID Control Loop
         error = h_c - h
-        if abs(error) < 25.0:
+        if abs(error) < 20.0:
             self.I_alt += Ts / 2 * (error + self.E_alt)
         else:
             self.I_alt = 0
@@ -217,7 +217,8 @@ class autoPilot(Trim):
             self.I_alt += Ts / self.k_i_h * (u - u_unsat)
 
         # u is th_c
-        return u
+        self.pitch_hold(x,u,Ts)
+        # return u
 
     def airspeed_pitch(self,x,v_c,Ts):
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
@@ -240,7 +241,8 @@ class autoPilot(Trim):
             self.I_air_pitch += Ts / self.k_i_v2 * (u - u_unsat)
 
         # u is th_c
-        return u
+        self.pitch_hold(x,u,Ts)
+        # return u
 
     def airspeed_throttle(self,x,v_c,Ts):
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
@@ -272,6 +274,7 @@ class autoPilot(Trim):
         h = -pd
         
         if self.switch == 'takeoff':
+            print 'Takeoff'
             if h > self.h_takeoff:
                 self.switch = 'air'
             
@@ -283,17 +286,20 @@ class autoPilot(Trim):
             # Set Throttle
             if h < self.h_hold - self.h_band:
                 self.deltas[3] = 1.0 # Climb
+                print 'Climbing'
             elif h > self.h_hold + self.h_band:
                 self.deltas[3] = 0.0 # Descend
+                print 'Descending'
 
             if h > self.h_hold - self.h_band and h < self.h_hold + self.h_band:
+                print 'Hold Zone: Altitude = ',self.h_hold#,'+/-',self.h_band,'meters'
                 # Altitude Hold with Throttle
                 self.airspeed_throttle(x,self.Va_0,self.dt)
-                th_c = self.altitude_hold(x,self.h_hold,self.dt)
-                self.pitch_hold(x,th_c,self.dt)
+                self.altitude_hold(x,self.h_hold,self.dt)
+                # self.pitch_hold(x,th_c,self.dt)
             else:
                 # Climb and Descend
-                th_c = self.airspeed_pitch(x,self.Va_0,self.dt)
-                self.pitch_hold(x,th_c,self.dt)
+                self.airspeed_pitch(x,self.Va_0,self.dt)
+                # self.pitch_hold(x,th_c,self.dt)
 
             

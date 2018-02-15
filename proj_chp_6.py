@@ -8,21 +8,24 @@ def ctrl_c(meq,x0,wind):
     alpha = []
     beta = []
     va = []
+    step = []
 
-    # Desired Roll Angle
-    phi_d = 10.0 * np.pi/180.0
+    th_d = meq.update_init_conds[7]
 
-    # Desired Course Angle
-    chi_d = 5.0 * np.pi / 180.0
+    # # Desired Roll Angle
+    # phi_d = 10.0 * np.pi/180.0
 
-    # Desired Pitch Angle
-    th_d = 10.0 * np.pi / 180.0
+    # # Desired Pitch Angle
+    # th_d = 10.0 * np.pi / 180.0
+    
+    # # Desired Course Angle
+    # chi_d = 5.0 * np.pi / 180.0
 
-    # Desired Altitude
-    h_d = deepcopy(meq.h_hold)
+    # # Desired Airspeed
+    # va_d = 40.0
 
-    # Desired Velocity
-    va_d = 30.0
+    # # Desired Altitude
+    # h_d = 20.0
     
     counter = 0
 
@@ -31,15 +34,30 @@ def ctrl_c(meq,x0,wind):
             # Calculate Wind Values
             # wind[3],wind[4],wind[5] = meq.calc_dryden_gust(meq.dt)
 
-            if counter > 20:
+            if counter > 20:                
+                # Inner Loops
                 meq.sideslip_hold(x0,meq.dt)
-                phi_d = meq.course_hold(x0,chi_d,meq.dt)
-                meq.roll_attitude(x0,phi_d,meq.dt)
+                # meq.roll_attitude(x0,phi_d,meq.dt)
+                # meq.airspeed_pitch(x0,va_d,meq.dt)
+                
+                # # Course Step
+                # meq.course_hold(x0,chi_d,meq.dt)
+                # step.append(chi_d)
+                
+                # # Airspeed Step
                 # meq.airspeed_throttle(x0,va_d,meq.dt)
-                # th_d = meq.altitude_hold(x0,h_d,meq.dt)
-                # th_d = meq.airspeed_pitch(x0,va_d,meq.dt)
-                # meq.pitch_hold(x0,th_d,meq.dt)
-                meq.mode(x0)
+                # meq.altitude_hold(x0,0,meq.dt)
+                # step.append(va_d)
+
+                # # Altitude Step
+                # meq.altitude_hold(x0,h_d,meq.dt)
+                # step.append(h_d)
+
+                # # AutoPilot
+                # meq.mode(x0)
+            else:
+                step.append(0)
+                # step.append(meq.Va_0)
 
             # Calculate Force, Airspeed, alpha, beta
             fx,fy,fz,l,m,n,va_,alpha_,beta_,wn,we,wd = meq.force_calc(x0,meq.deltas,wind)
@@ -77,12 +95,13 @@ def ctrl_c(meq,x0,wind):
     except KeyboardInterrupt:
         plt.close('all')
         meq.plot_all_post(np.transpose(sols),alpha,beta,va)
-        meq.ax3.axhline(y=h_d,color='k',linestyle='--')
-        meq.ax7.axhline(y=phi_d,color='k',linestyle='--')
-        meq.ax8.axhline(y=th_d,color='k',linestyle='--')
-        meq.ax9.axhline(y=chi_d,color='k',linestyle='--')
-        meq.ax14.axhline(y=0.0,color='k',linestyle='--')
-        meq.ax15.axhline(y=va_d,color='k',linestyle='--')
+        time = np.multiply(np.linspace(0,len(step),len(step)),meq.dt)
+        meq.ax3.plot(time,step,color='k',linestyle='--') # Alt
+        # meq.ax7.plot(time,step,color='k',linestyle='--') # Phi
+        # meq.ax8.plot(time,step,color='k',linestyle='--') # Theta
+        # meq.ax9.plot(time,step,color='k',linestyle='--') # Chi
+        # meq.ax14.plot(time,step,color='k',linestyle='--') # Beta
+        # meq.ax15.plot(time,step,color='k',linestyle='--') # Air
         plt.show()
 
 if __name__ == "__main__":    
