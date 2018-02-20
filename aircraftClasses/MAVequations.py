@@ -9,7 +9,8 @@ class MAVEOM(AirCraftDrawing):
         AirCraftDrawing.__init__(self)
 
         # Time Step
-        self.dt = 0.03
+        self.dt = 0.02
+        self.t_sim = 0.0
 
         # Plane Parameters
         self.mass = 13.5
