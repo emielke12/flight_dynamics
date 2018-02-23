@@ -44,8 +44,8 @@ class Sensors(autoPilot):
         y_accel_z = fz / self.mass - self.g * np.cos(th) * np.cos(phi) + np.random.randn() * self.sigma_accel
 
         # Pressure Sensors
-        y_abs_pres = self.rho * self.g * -pd + self.beta_abs_pres + np.random.randn() * self.sigma_abs_pres
-        y_diff_pres = self.rho * self.Va**2 / 2 + self.beta_diff_pres + np.random.randn() * self.sigma_diff_pres
+        y_abs_pres = (self.rho * self.g * -pd)/1000.0 + self.beta_abs_pres + np.random.randn() * self.sigma_abs_pres
+        y_diff_pres = (self.rho * self.Va**2 / 2)/1000.0 + self.beta_diff_pres + np.random.randn() * self.sigma_diff_pres
 
         return [y_gyro_x,y_gyro_y,y_gyro_z,y_accel_x,y_accel_y,y_accel_z,y_abs_pres,y_diff_pres]
 
@@ -92,20 +92,21 @@ class Sensors(autoPilot):
 
             self.sensor_fig.show()
             self.sensor_first = False
-
-            self.sax1.set_ylabel(r'$p_{n,gps}$ (m)')
-            self.sax2.set_ylabel(r'$P_{e,gps}$ (m)')
-            self.sax3.set_ylabel(r'$h_{gps}$ (m)}')
-            self.sax4.set_ylabel('V_g (m/s)')
-            self.sax5.set_ylabel(r'$\chi$ (rad)')
-            self.sax6.set_ylabel(r'$gyro_x$ (rad/s)')
-            self.sax7.set_ylabel(r'$gyro_y$ (rad/s)')
-            self.sax8.set_ylabel(r'$gyro_z$ (rad/s)')
-            self.sax9.set_ylabel(r'$a_x$ (rad/s)')
-            self.sax10.set_ylabel(r'$a_y$ (rad/s)')
-            self.sax11.set_ylabel(r'$a_z$ (rad/s)')
-            self.sax12.set_ylabel(r'$P_{abs}$ (kPa)')
-            self.sax13.set_ylabel(r'$P_{diff}$ (kPa)')
+            self.axis_font = {'fontsize':'18'}
+            
+            self.sax1.set_ylabel(r'$p_{n,gps} (m)$',**self.axis_font)
+            self.sax2.set_ylabel(r'$P_{e,gps} (m)$',**self.axis_font)
+            self.sax3.set_ylabel(r'$h_{gps} (m)$',**self.axis_font)
+            self.sax4.set_ylabel(r'$V_g (m/s)$',**self.axis_font)
+            self.sax5.set_ylabel(r'$\chi (rad)$',**self.axis_font)
+            self.sax6.set_ylabel(r'$gyro_x (rad/s)$',**self.axis_font)
+            self.sax7.set_ylabel(r'$gyro_y (rad/s)$',**self.axis_font)
+            self.sax8.set_ylabel(r'$gyro_z (rad/s)$',**self.axis_font)
+            self.sax9.set_ylabel(r'$a_x (m/s^2)$',**self.axis_font)
+            self.sax10.set_ylabel(r'$a_y (m/s^2)$',**self.axis_font)
+            self.sax11.set_ylabel(r'$a_z (m/s^2)$',**self.axis_font)
+            self.sax12.set_ylabel(r'$P_{abs} (kPa)$',**self.axis_font)
+            self.sax13.set_ylabel(r'$P_{diff} (kPa)$',**self.axis_font)
 
             self.s1, = self.sax1.plot(s[0])
             self.s2, = self.sax2.plot(s[1])

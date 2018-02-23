@@ -88,7 +88,7 @@ if __name__ == "__main__":
     wind = [0.0,0.0,0.0,0.0,0.0,0.0]
 
     # Desired Trim
-    trim = [x0[3],0.0 * np.pi/180.0,5e60] # Va, gamma, R
+    trim = [x0[3],0.0 * np.pi/180.0,5e2] # Va, gamma, R
 
     # Instantiate Class
     plane = Sensors(x0,trim)
