@@ -35,7 +35,7 @@ class autoPilot(Trim):
         # Roll
         self.k_i_phi = 0.5 
         self.zeta_phi = 1.1 
-        self.k_p_phi = self.max_deltas[2] / self.phi_max        
+        self.k_p_phi = self.max_deltas[2] / self.phi_max 
         self.omega_n_phi = np.sqrt(self.k_p_phi * self.a_phi2)
         self.k_d_phi = (2 * self.zeta_phi * self.omega_n_phi - self.a_phi1) / self.a_phi2
 
@@ -96,7 +96,7 @@ class autoPilot(Trim):
         self.D_pitch = 0.0
         self.E_pitch = 0.0
 
-        self.I_alt = 0.0
+        self.I_alt = 30.5
         self.E_alt = 0.0
 
         self.I_air_pitch = 0.0

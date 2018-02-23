@@ -44,8 +44,8 @@ class Sensors(autoPilot):
         y_accel_z = fz / self.mass - self.g * np.cos(th) * np.cos(phi) + np.random.randn() * self.sigma_accel
 
         # Pressure Sensors
-        y_abs_pres = (self.rho * self.g * -pd)/1000.0 + self.beta_abs_pres + np.random.randn() * self.sigma_abs_pres
-        y_diff_pres = (self.rho * self.Va**2 / 2)/1000.0 + self.beta_diff_pres + np.random.randn() * self.sigma_diff_pres
+        y_abs_pres = ((self.rho * self.g * -pd)/1000.0 + self.beta_abs_pres + np.random.randn() * self.sigma_abs_pres) * 1000.0
+        y_diff_pres = ((self.rho * self.Va**2 / 2)/1000.0 + self.beta_diff_pres + np.random.randn() * self.sigma_diff_pres) * 1000.0
 
         return [y_gyro_x,y_gyro_y,y_gyro_z,y_accel_x,y_accel_y,y_accel_z,y_abs_pres,y_diff_pres]
 
