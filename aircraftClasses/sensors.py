@@ -9,14 +9,14 @@ class Sensors(autoPilot):
         self.Ts_gps = 1.0 # seconds
         
         # Sensor Variables
-        self.sigma_gyro = 0.13 # deg/s
+        self.sigma_gyro = 0.13*np.pi/180.0 # rad/s
         self.sigma_accel = 0.0025 # m/s**2
-        self.beta_abs_pres = 0.125 # kPa
+        self.beta_abs_pres = 0.0125 # kPa
         self.sigma_abs_pres = 0.01 # kPa
-        self.beta_diff_pres = 0.02 # kPa
+        self.beta_diff_pres = 0.002 # kPa
         self.sigma_diff_pres = 0.002 # kPa
-        self.sigma_mag = 0.3 # degrees
-        self.beta_mag = 1.0 # degrees
+        self.sigma_mag = 0.3*np.pi/180.0 # radians
+        self.beta_mag = 1.0*np.pi/180.0 # radians
         self.sigma_V = 0.05 # m/s
 
         # GPS Specific Stuff

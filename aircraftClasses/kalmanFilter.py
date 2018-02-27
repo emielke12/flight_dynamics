@@ -1,17 +1,21 @@
 from sensors import *
+from copy import deepcopy
 
 class kalmanFilter(Sensors):
     def __init__(self,x0,trim):
         Sensors.__init__(self,x0,trim)
         self.sens = [0.0] * 8
         self.gps = [0.0] * 5
+        self.Tout = 0.01
         
         # Sensed States
         self.p_hat = 0.0
         self.q_hat = 0.0
         self.r_hat = 0.0
         self.h_hat = -x0[2]
-        self.Va_hat = self.Va
+        self.stat_hat = -x0[2] * self.rho * self.g
+        self.Va_hat = np.sqrt(x0[3]**2 + x0[4]**2 + x0[5]**2)
+        self.diff_hat = self.Va_hat**2 * self.rho / 2
         self.phi_hat = 0.0
         self.th_hat = 0.0
         self.pn_hat = 0.0
@@ -37,7 +41,66 @@ class kalmanFilter(Sensors):
         self.alpha_pe = 0.2
         self.alpha_chi = 0.2
         self.alpha_vg = 0.2
-        
+
+        # Previous Sensor Values
+        self.u_att = [0.0,0.0,0.0,0.0]
+
+    def ekf(self,x_att,x_gps,u_att,u_gps):
+        # roll and pitch stuff
+        x_atthat,P_att = predict(x_att,self.f_att,u_att,self.df_att,self.Pa,self.Qa)
+        for i in xrange(len(u_att)):
+            if u_att[i] != self.u_att[i]:
+                x_atthat,P_att = update(x_att_hat,self.dh_att,u_att,P_att,self.Ra,y[i],self.h_att,i)
+
+        self.Pa = P_att
+        self.x_atthat = x_atthat
+
+        # Gps stuff
+
+    def predict(self,xhat,f,u,df,P,Q):
+        for i in xrange(10):
+            xhat += self.Tout/i * f(xhat,u)
+            A = df(xhat,u)
+            P += self.Tout/i * (A * P + P * A.T + Q)
+        return xhat,P
+
+    def update(self,xhat,dh,u,P,R,y,h,col):
+        C = dh(xhat[col],u)
+        L = P * C.T * 1 / (R + C * P * C.T)
+        P = (np.eye(np.shape(L * C)) - L * C) * P
+        xhat += L * (y - h(xhat,u))
+        return xhat,P,L
+
+    def f_att(self,x,u):
+        phi, th = x
+        p, q, r, va = u
+        f = [p + q * np.sin(phi) * np.tan(th) + r * np.cos(phi) * np.tan(th),
+             q * np.cos(phi) - r * np.sin(phi)]
+        return f
+
+    def h_att(self,x,u):
+        phi, th = x
+        p, q, r, va = u
+        f = [q * va * np.sin(th) + self.g * np.sin(th),
+             r * va * np.cos(th) - p * va * np.sin(th) - self.g * np.cos(th) * np.sin(phi),
+             -q * va * np.cos(th) - self.g * np.cos(th) * np.cos(phi)]
+        return f
+
+    def df_att(self,x,u):
+        phi, th = x
+        p, q, r, va = u
+        f = [[q * np.cos(phi) * np.tan(th) - r * np.sin(phi) * np.tan(th), (q * np.sin(phi) - r * np.cos(phi)) / (np.cos(th)**2)],
+             [-q * np.sin(phi) - r * np.cos(phi), 0]]
+        return f
+
+    def dh_att(self,x,u,col):
+        phi, th = x
+        p, q, r, va = u
+        f = [[0, q * va * np.cos(th) + self.g * np.cos(th)],
+             [-self.g * np.cos(phi) * np.cos(th), -r * va * np.sin(th) - p * va * np.cos(th) + self.g * np.sin(phi) * np.sin(th)],
+             [self.g * np.sin(phi) * np.cos(th), (q * va + self.g * np.cos(phi)) * np.sin(th)]]
+        return f[col]
+    
     def get_lpf(self,x,fx,fy,fz,wn,we,wd,count,plot = True):
         # rename inputs
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
