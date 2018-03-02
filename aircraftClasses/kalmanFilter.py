@@ -6,7 +6,9 @@ class kalmanFilter(Sensors):
         Sensors.__init__(self,x0,trim)
         self.sens = [0.0] * 8
         self.gps = [0.0] * 5
-        self.Tout = 0.01
+        self.dt = 0.01
+        self.N = 10
+        self.Tout = self.dt / self.N
         
         # Sensed States
         self.p_hat = 0.0
@@ -43,33 +45,54 @@ class kalmanFilter(Sensors):
         self.alpha_vg = 0.2
 
         # Previous Sensor Values
-        self.u_att = [0.0,0.0,0.0,0.0]
+        self.y_attprev = [0.0,0.0,0.0]
 
-    def ekf(self,x_att,x_gps,u_att,u_gps):
+        # Covariances and Kalman Filter Stuff
+        self.x_atthat = [0.0,0.0]
+        self.Pa = np.diag([(15.0*np.pi/180.0)**2,(15.0*np.pi/180.0)**2])
+        self.Qa = np.diag([1e-3,1e-3])
+        self.Ra = np.diag([self.sigma_gyro,self.sigma_gyro,self.sigma_gyro])
+        self.x_gpshat = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        self.Pg = np.diag([100,100,1,(10.0 * np.pi/180.0)**2,(5.0 * np.pi/180.0)**2])
+        self.Qg = np.diag([0.1,0.1,0.1,0.1,0.1])
+        self.Rg = np.diag([self.sigma_n**2,self.sigma_e**2,self.sigma_V**2,self.sigma_chi**2])
+
+    def ekf(self,x,f,wind,count):
+        # Rename inputs
+        pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
+        wn,we,wd = wind
+        fx,fy,fz = f
+
+        # Get Sensor Readings
+        self.get_lpf(x,fx,fy,fz,wn,we,wd,count,False)
+        
         # roll and pitch stuff
-        x_atthat,P_att = predict(x_att,self.f_att,u_att,self.df_att,self.Pa,self.Qa)
-        for i in xrange(len(u_att)):
-            if u_att[i] != self.u_att[i]:
-                x_atthat,P_att = update(x_att_hat,self.dh_att,u_att,P_att,self.Ra,y[i],self.h_att,i)
-
+        u_att = [self.p_hat,self.q_hat,self.r_hat,self.Va_hat]
+        y_att = self.sens[3:6]
+        x_atthat,P_att = self.predict(self.x_atthat,self.f_att,u_att,self.df_att,self.Pa,self.Qa)
+        for i in xrange(len(y_att)):
+            if y_att[i] != self.y_attprev[i]:
+                x_atthat,P_att = self.update(x_atthat,self.dh_att,u_att,P_att,self.Ra,y_att[i],self.h_att,i)
+                self.y_attprev[i] = y_att[i]
+        
         self.Pa = P_att
         self.x_atthat = x_atthat
-
+        self.ekfplot(x_atthat,[phi,th],count)
         # Gps stuff
 
     def predict(self,xhat,f,u,df,P,Q):
-        for i in xrange(10):
-            xhat += self.Tout/i * f(xhat,u)
+        for i in xrange(self.N):
+            xhat += np.multiply(self.Tout/(i+1),f(xhat,u))
             A = df(xhat,u)
-            P += self.Tout/i * (A * P + P * A.T + Q)
+            P += self.Tout/(i+1) * (np.add(np.add(np.matmul(A,P),np.matmul(P,np.transpose(A))),Q))
         return xhat,P
 
-    def update(self,xhat,dh,u,P,R,y,h,col):
-        C = dh(xhat[col],u)
-        L = P * C.T * 1 / (R + C * P * C.T)
-        P = (np.eye(np.shape(L * C)) - L * C) * P
-        xhat += L * (y - h(xhat,u))
-        return xhat,P,L
+    def update(self,xhat,dh,u,P,R,y,h,row):
+        C = dh(xhat,u,row)
+        L = np.matmul(P,np.transpose(C)) / (R[row][row] + np.matmul(np.matmul(C,P),np.transpose(C)))
+        P = (np.eye(np.shape(L * C)[0]) - L * C) * P
+        xhat += L * (y - h(xhat,u)[row])
+        return xhat,P
 
     def f_att(self,x,u):
         phi, th = x
@@ -89,17 +112,17 @@ class kalmanFilter(Sensors):
     def df_att(self,x,u):
         phi, th = x
         p, q, r, va = u
-        f = [[q * np.cos(phi) * np.tan(th) - r * np.sin(phi) * np.tan(th), (q * np.sin(phi) - r * np.cos(phi)) / (np.cos(th)**2)],
+        f = [[q * np.cos(phi) * np.tan(th) - r * np.sin(phi) * np.tan(th), (q * np.sin(phi) + r * np.cos(phi)) / (np.cos(th)**2)],
              [-q * np.sin(phi) - r * np.cos(phi), 0]]
         return f
 
-    def dh_att(self,x,u,col):
+    def dh_att(self,x,u,row):
         phi, th = x
         p, q, r, va = u
         f = [[0, q * va * np.cos(th) + self.g * np.cos(th)],
              [-self.g * np.cos(phi) * np.cos(th), -r * va * np.sin(th) - p * va * np.cos(th) + self.g * np.sin(phi) * np.sin(th)],
              [self.g * np.sin(phi) * np.cos(th), (q * va + self.g * np.cos(phi)) * np.sin(th)]]
-        return f[col]
+        return f[row]
     
     def get_lpf(self,x,fx,fy,fz,wn,we,wd,count,plot = True):
         # rename inputs
@@ -114,9 +137,12 @@ class kalmanFilter(Sensors):
         y_gps_n,y_gps_e,y_gps_d,y_gps_Vg,y_gps_chi = self.gps
 
         # Pass certain ones through low pass filtering
-        self.p_hat = self.lpf(self.p_hat,y_gyro_x,self.alpha_p)
-        self.q_hat = self.lpf(self.q_hat,y_gyro_y,self.alpha_q)
-        self.r_hat = self.lpf(self.r_hat,y_gyro_z,self.alpha_r)
+        # self.p_hat = self.lpf(self.p_hat,y_gyro_x,self.alpha_p)
+        # self.q_hat = self.lpf(self.q_hat,y_gyro_y,self.alpha_q)
+        # self.r_hat = self.lpf(self.r_hat,y_gyro_z,self.alpha_r)
+        self.p_hat = y_gyro_x
+        self.q_hat = y_gyro_y
+        self.r_hat = y_gyro_z
         self.stat_hat = self.lpf(self.stat_hat,y_abs_pres,self.alpha_h)
         self.h_hat = self.stat_hat / (self.rho * self.g)
         self.diff_hat = self.lpf(self.diff_hat,y_diff_pres,self.alpha_va)
@@ -138,7 +164,6 @@ class kalmanFilter(Sensors):
         s = [self.pn_hat,self.pe_hat,self.h_hat,self.Vg_hat,self.chi_hat,
              self.p_hat,self.q_hat,self.r_hat,self.Va_hat,self.phi_hat,self.th_hat]
         true = [pn,pe,-pd,self.Vg,self.chi,p,q,r,self.Va,phi,th]
-        print s[2] + pd
         if plot == True:
             self.update_sensor_plot(s,true,count)
         
@@ -272,6 +297,95 @@ class kalmanFilter(Sensors):
             self.sax10.autoscale_view()
             self.sax11.autoscale_view()
 
+            
+            self.sensor_fig.tight_layout()
+            self.sensor_fig.canvas.draw()
+
+    def ekfplot(self,s,true,count):
+        if self.sensor_first == True:
+            self.sensor_fig = plt.figure(figsize=(20,10))
+            self.sax1 = self.sensor_fig.add_subplot(331)
+            self.sax2 = self.sensor_fig.add_subplot(332)
+            self.sax3 = self.sensor_fig.add_subplot(333)
+            self.sax4 = self.sensor_fig.add_subplot(334)
+            self.sax5 = self.sensor_fig.add_subplot(335)
+            self.sax6 = self.sensor_fig.add_subplot(336)
+            self.sax7 = self.sensor_fig.add_subplot(337)
+
+            self.sensor_fig.show()
+            self.sensor_first = False
+            self.axis_font = {'fontsize':'18'}
+            
+            self.sax1.set_ylabel(r'$\phi (rad)$',**self.axis_font)
+            self.sax2.set_ylabel(r'$\theta (rad)$',**self.axis_font)
+            self.sax3.set_ylabel(r'$p_n (m)$',**self.axis_font)
+            self.sax4.set_ylabel(r'$p_e (m)$',**self.axis_font)
+            self.sax5.set_ylabel(r'$V_g (m/s)$',**self.axis_font)
+            self.sax6.set_ylabel(r'$\chi (rad)$',**self.axis_font)
+            self.sax7.set_ylabel(r'$\psi (rad)$',**self.axis_font)
+
+            self.s1, = self.sax1.plot(s[0])
+            self.s2, = self.sax2.plot(s[1])
+            # self.s3, = self.sax3.plot(s[2])
+            # self.s4, = self.sax4.plot(s[3])
+            # self.s5, = self.sax5.plot(s[4])
+            # self.s6, = self.sax6.plot(s[5])
+            # self.s7, = self.sax7.plot(s[6])
+            self.t1, = self.sax1.plot(true[0])
+            self.t2, = self.sax2.plot(true[1])
+            # self.t3, = self.sax3.plot(true[2])
+            # self.t4, = self.sax4.plot(true[3])
+            # self.t5, = self.sax5.plot(true[4])
+            # self.t6, = self.sax6.plot(true[5])
+            # self.t7, = self.sax7.plot(true[6])
+
+        else:
+            t = np.linspace(0,self.t_sim,count)
+
+            self.s1.set_xdata(t)
+            self.s2.set_xdata(t)
+            # self.s3.set_xdata(t)
+            # self.s4.set_xdata(t)
+            # self.s5.set_xdata(t)
+            # self.s6.set_xdata(t)
+            # self.s7.set_xdata(t)
+            self.t1.set_xdata(t)
+            self.t2.set_xdata(t)
+            # self.t3.set_xdata(t)
+            # self.t4.set_xdata(t)
+            # self.t5.set_xdata(t)
+            # self.t6.set_xdata(t)
+            # self.t7.set_xdata(t)
+
+            self.s1.set_ydata(np.append(self.s1.get_ydata(),s[0]))
+            self.s2.set_ydata(np.append(self.s2.get_ydata(),s[1]))
+            # self.s3.set_ydata(np.append(self.s3.get_ydata(),s[2]))
+            # self.s4.set_ydata(np.append(self.s4.get_ydata(),s[3]))
+            # self.s5.set_ydata(np.append(self.s5.get_ydata(),s[4]))
+            # self.s6.set_ydata(np.append(self.s6.get_ydata(),s[5]))
+            # self.s7.set_ydata(np.append(self.s7.get_ydata(),s[6]))
+            self.t1.set_ydata(np.append(self.t1.get_ydata(),true[0]))
+            self.t2.set_ydata(np.append(self.t2.get_ydata(),true[1]))
+            # self.t3.set_ydata(np.append(self.t3.get_ydata(),true[2]))
+            # self.t4.set_ydata(np.append(self.t4.get_ydata(),true[3]))
+            # self.t5.set_ydata(np.append(self.t5.get_ydata(),true[4]))
+            # self.t6.set_ydata(np.append(self.t6.get_ydata(),true[5]))
+            # self.t7.set_ydata(np.append(self.t7.get_ydata(),true[6]))
+
+            self.sax1.relim()
+            self.sax2.relim()
+            self.sax3.relim()
+            self.sax4.relim()
+            self.sax5.relim()
+            self.sax6.relim()
+            self.sax7.relim()
+            self.sax1.autoscale_view()
+            self.sax2.autoscale_view()
+            self.sax3.autoscale_view()
+            self.sax4.autoscale_view()
+            self.sax5.autoscale_view()
+            self.sax6.autoscale_view()
+            self.sax7.autoscale_view()
             
             self.sensor_fig.tight_layout()
             self.sensor_fig.canvas.draw()

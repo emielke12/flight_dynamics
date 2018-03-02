@@ -16,7 +16,7 @@ def ctrl_c(plane,x0,wind):
             # Just keep from sideslipping
             plane.sideslip_hold(x0,plane.dt)
 
-            # Altitude
+            # Maneuver to Run
             if plane.t_sim >= 5.0 and plane.t_sim < 15.0:
                 # plane.altitude_hold(x0,105.0,plane.dt)
                 plane.h_hold = 105.0
@@ -44,8 +44,11 @@ def ctrl_c(plane,x0,wind):
             # Run ODE to get next step
             sol = odeint(plane.eom,x0,[0.0,plane.dt],args=(fx,fy,fz,l,m,n))
 
-            # Plot Sensors
-            plane.get_lpf(sol[-1],fx,fy,fz,wn,we,wd,counter)
+            # # Plot Sensors
+            # plane.get_lpf(sol[-1],fx,fy,fz,wn,we,wd,counter)
+
+            # Run EKF
+            plane.ekf(sol[-1],[fx,fy,fz],[wn,we,wd],counter)
 
             # Put into total solution matrix for plotting
             for j in xrange(len(x0)):
@@ -59,7 +62,7 @@ def ctrl_c(plane,x0,wind):
                 if j == 8:
                     sols[j][-1] = plane.chi
 
-            # Plot
+            # # Plot
             # plane.draw_update([sol[-1][6],sol[-1][7],sol[-1][8]],[sol[-1][0],sol[-1][1],sol[-1][2]])
 
             # plot things
@@ -74,7 +77,7 @@ def ctrl_c(plane,x0,wind):
             plane.t_sim += plane.dt
             counter += 1
 
-            if plane.t_sim >= 80.0:
+            if plane.t_sim >= 40.0:
                 plt.close('all')
                 plane.plot_all_post(np.transpose(sols),alpha,beta,va)
                 plt.show()
@@ -82,8 +85,8 @@ def ctrl_c(plane,x0,wind):
             
     except KeyboardInterrupt:
         plt.close('all')
-        plane.plot_all_post(np.transpose(sols),alpha,beta,va)
-        plt.show()
+        # plane.plot_all_post(np.transpose(sols),alpha,beta,va)
+        # plt.show()
 
 if __name__ == "__main__":    
     # Initial Conditions

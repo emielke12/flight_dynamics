@@ -286,13 +286,13 @@ class autoPilot(Trim):
             # Set Throttle
             if h < self.h_hold - self.h_band:
                 self.deltas[3] = 1.0 # Climb
-                print 'Climbing'
+                # print 'Climbing'
             elif h > self.h_hold + self.h_band:
                 self.deltas[3] = 0.0 # Descend
-                print 'Descending'
+                # print 'Descending'
 
             if h > self.h_hold - self.h_band and h < self.h_hold + self.h_band:
-                print 'Hold Zone: Altitude = ',self.h_hold#,'+/-',self.h_band,'meters'
+                # print 'Hold Zone: Altitude = ',self.h_hold#,'+/-',self.h_band,'meters'
                 # Altitude Hold with Throttle
                 self.airspeed_throttle(x,self.Va_0,self.dt)
                 self.altitude_hold(x,self.h_hold,self.dt)

@@ -18,6 +18,7 @@ class Sensors(autoPilot):
         self.sigma_mag = 0.3*np.pi/180.0 # radians
         self.beta_mag = 1.0*np.pi/180.0 # radians
         self.sigma_V = 0.05 # m/s
+        self.sigma_chi = self.sigma_V / np.linalg.norm([x0[3],x0[4],x0[5]])
 
         # GPS Specific Stuff
         self.sigma_n = 0.21 # meters
