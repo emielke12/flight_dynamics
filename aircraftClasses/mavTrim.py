@@ -94,14 +94,14 @@ class Trim(MAVForces):
         self.a_v3 = self.g #* np.cos(th - self.chi)
         
         # Transfer Functions
-        self.T_phi_deltaa = sigs.TransferFunction([self.a_phi2],[1,self.a_phi1,0])
-        self.T_chi_phi = sigs.TransferFunction([self.g / self.Va_trim],[1,0])
-        self.T_th_deltae = sigs.TransferFunction([self.a_th3],[1,self.a_th1,self.a_th2])
-        self.T_h_theta = sigs.TransferFunction([self.Va_trim],[1,0])
-        self.T_h_Va = sigs.TransferFunction([th],[1,0])
-        self.T_Va_deltat = sigs.TransferFunction([self.a_v2],[1,self.a_v1])
-        self.T_Va_theta = sigs.TransferFunction([-self.a_v3],[1,self.a_v1])
-        self.T_v_deltar = sigs.TransferFunction([self.Va_trim * self.a_beta2],[1,self.a_beta1])
+#         self.T_phi_deltaa = sigs.TransferFunction([self.a_phi2],[1,self.a_phi1,0])
+#         self.T_chi_phi = sigs.TransferFunction([self.g / self.Va_trim],[1,0])
+#         self.T_th_deltae = sigs.TransferFunction([self.a_th3],[1,self.a_th1,self.a_th2])
+#         self.T_h_theta = sigs.TransferFunction([self.Va_trim],[1,0])
+#         self.T_h_Va = sigs.TransferFunction([th],[1,0])
+#         self.T_Va_deltat = sigs.TransferFunction([self.a_v2],[1,self.a_v1])
+#         self.T_Va_theta = sigs.TransferFunction([-self.a_v3],[1,self.a_v1])
+#         self.T_v_deltar = sigs.TransferFunction([self.Va_trim * self.a_beta2],[1,self.a_beta1])
 
     def get_numerical_ss(self,x):
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x

@@ -49,6 +49,7 @@ def ctrl_c(plane,x0,wind):
 
             # Run EKF
             plane.ekf(sol[-1],[fx,fy,fz],[wn,we,wd],counter)
+            raw_input()
 
             # Put into total solution matrix for plotting
             for j in xrange(len(x0)):
