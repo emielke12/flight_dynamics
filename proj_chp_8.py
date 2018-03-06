@@ -14,29 +14,36 @@ def ctrl_c(plane,x0,wind):
             # wind[3],wind[4],wind[5] = plane.calc_dryden_gust(plane.dt)
 
             # Just keep from sideslipping
-            plane.sideslip_hold(x0,plane.dt)
+            # plane.sideslip_hold(x0,plane.dt)
+            # plane.sideslip_hold(plane.x_hat,plane.dt)
 
             # Maneuver to Run
             if plane.t_sim >= 5.0 and plane.t_sim < 15.0:
-                # plane.altitude_hold(x0,105.0,plane.dt)
-                plane.h_hold = 105.0
-                plane.mode(x0)
+                plane.altitude_hold(plane.x_hat,105.0,plane.dt)
+                plane.airspeed_throttle(plane.x_hat,30.0,plane.dt)
+                # plane.h_hold = 105.0
+                # plane.mode(x0)
             elif plane.t_sim >= 15.0 and plane.t_sim < 25.0:
-                # plane.altitude_hold(x0,95.0,plane.dt)
-                plane.h_hold = 95.0
-                plane.mode(x0)
+                plane.altitude_hold(plane.x_hat,95.0,plane.dt)
+                plane.airspeed_throttle(plane.x_hat,30.0,plane.dt)
+                # plane.h_hold = 95.0
+                # plane.mode(x0)
             else:
-                # plane.altitude_hold(x0,100.0,plane.dt)
-                plane.h_hold = 100.0
-                plane.mode(x0)
+                plane.altitude_hold(plane.x_hat,100.0,plane.dt)
+                plane.airspeed_throttle(plane.x_hat,30.0,plane.dt)
+                # plane.h_hold = 100.0
+                # plane.mode(x0)
                 
             # Course
             if plane.t_sim >= 1.0 and plane.t_sim < 10.0:
-                plane.course_hold(x0, 25.0 * np.pi / 180.0, plane.dt)
+                # plane.course_hold(x0, 25.0 * np.pi / 180.0, plane.dt)
+                plane.course_hold(plane.x_hat, 25.0 * np.pi / 180.0, plane.dt)
             elif plane.t_sim >=10.0 and plane.t_sim < 20.0:
-                plane.course_hold(x0, -25.0 * np.pi / 180.0, plane.dt)
+                # plane.course_hold(x0, -25.0 * np.pi / 180.0, plane.dt)
+                plane.course_hold(plane.x_hat, -25.0 * np.pi / 180.0, plane.dt)
             else:
-                plane.course_hold(x0, 0.0 * np.pi / 180.0, plane.dt)
+                # plane.course_hold(x0, 0.0 * np.pi / 180.0, plane.dt)
+                plane.course_hold(plane.x_hat, 0.0 * np.pi / 180.0, plane.dt)
 
             # Calculate Force, Airspeed, alpha, beta
             fx,fy,fz,l,m,n,va_,alpha_,beta_,wn,we,wd = plane.force_calc(x0,plane.deltas,wind)
@@ -49,7 +56,6 @@ def ctrl_c(plane,x0,wind):
 
             # Run EKF
             plane.ekf(sol[-1],[fx,fy,fz],[wn,we,wd],counter)
-            raw_input()
 
             # Put into total solution matrix for plotting
             for j in xrange(len(x0)):

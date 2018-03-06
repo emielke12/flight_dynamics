@@ -62,7 +62,6 @@ class Sensors(autoPilot):
         y_gps_n = pn + self.eta_n
         y_gps_e = pe + self.eta_e
         y_gps_d = -pd + self.eta_d
-
         
         # GPS Velocity Measurements
         VN = self.Va * np.cos(psi) + wn

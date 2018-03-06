@@ -34,14 +34,14 @@ class autoPilot(Trim):
         # Design Parameters (I.E. These are the ones that you should tune)
         # Roll
         self.k_i_phi = 0.5 
-        self.zeta_phi = 1.1 
+        self.zeta_phi = 1.8 
         self.k_p_phi = self.max_deltas[2] / self.phi_max 
         self.omega_n_phi = np.sqrt(self.k_p_phi * self.a_phi2)
         self.k_d_phi = (2 * self.zeta_phi * self.omega_n_phi - self.a_phi1) / self.a_phi2
 
         # Course
-        self.W_chi = 7.0
-        self.zeta_chi = 1.1
+        self.W_chi = 17.0
+        self.zeta_chi = 1.5
         self.omega_n_chi = 1 / self.W_chi * self.omega_n_phi
         self.k_p_chi = 2 * self.zeta_chi * self.omega_n_chi * self.Va_0 / self.g
         self.k_i_chi = self.omega_n_chi**2 * self.Va_0 / self.g
@@ -75,7 +75,7 @@ class autoPilot(Trim):
         self.k_p_v2 = (self.a_v1 - 2 * self.zeta_v2 * self.omega_n_v2) / (self.K_dc_th * self.g)
 
         # Airspeed Throttle
-        self.zeta_v = 1.0 
+        self.zeta_v = 0.7 
         self.omega_n_v = 5.0
         self.k_p_v = (2 * self.zeta_v * self.omega_n_v - self.a_v1) / self.a_v2
         self.k_i_v = self.omega_n_v**2 / self.a_v2
