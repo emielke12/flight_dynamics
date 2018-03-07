@@ -17,6 +17,7 @@ def ctrl_c(plane,x0,wind):
             # plane.sideslip_hold(x0,plane.dt)
             # plane.sideslip_hold(plane.x_hat,plane.dt)
 
+
             # Maneuver to Run
             if plane.t_sim >= 5.0 and plane.t_sim < 15.0:
                 plane.altitude_hold(plane.x_hat,105.0,plane.dt)
@@ -92,6 +93,7 @@ def ctrl_c(plane,x0,wind):
             
     except KeyboardInterrupt:
         plt.close('all')
+        sys.exit()
         # plane.plot_all_post(np.transpose(sols),alpha,beta,va)
         # plt.show()
 
