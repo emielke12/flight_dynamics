@@ -235,7 +235,7 @@ class MAVForces(MAVEOM):
         self.state_fig.tight_layout()
         self.state_fig.canvas.draw()
 
-    def plot_all_post(self,states,alpha,beta,va):
+    def plot_all_post(self,states,alpha,beta,va,cmd=[None,None,None]):
 
         self.state_fig = plt.figure(figsize=(20,10))
         self.ax1 = self.state_fig.add_subplot(531)
@@ -284,18 +284,24 @@ class MAVForces(MAVEOM):
         self.ax1.plot(t,states[:,0])
         self.ax2.plot(t,states[:,1])
         self.ax3.plot(t,states[:,2])
+        if cmd[0] != None:
+            self.ax3.plot(t,cmd[0])
         self.ax4.plot(t,states[:,3])
         self.ax5.plot(t,states[:,4])
         self.ax6.plot(t,states[:,5])
         self.ax7.plot(t,states[:,6])
         self.ax8.plot(t,states[:,7])
         self.ax9.plot(t,states[:,8])
+        if cmd[2] != None:
+            self.ax9.plot(t,cmd[2])
         self.ax10.plot(t,states[:,9])
         self.ax11.plot(t,states[:,10])
         self.ax12.plot(t,states[:,11])
         self.ax13.plot(t,alpha)
         self.ax14.plot(t,beta)
         self.ax15.plot(t,va)
+        if cmd[1] != None:
+            self.ax15.plot(t,cmd[1])
 
         plt.tight_layout()
         # plt.show()

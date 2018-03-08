@@ -63,7 +63,7 @@ class kalmanFilter(Sensors):
         self.Qg = np.diag([0.01, 0.01, 10.0, 10.0, 0.00001])
         self.Rg = np.diag([self.sigma_n**2,self.sigma_e**2,(self.sigma_V/10)**2,self.sigma_chi**2])
 
-    def ekf(self,x,f,wind,count):
+    def ekf(self,x,f,wind,count,plot=True):
         # Rename inputs
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
         wn,we,wd = wind
@@ -99,7 +99,8 @@ class kalmanFilter(Sensors):
         self.psi_hat = x_gpshat[-1]
 
         # Plot
-        self.ekfplot2(np.concatenate((x_atthat,x_gpshat)),[phi,th,pn,pe,self.Vg,self.chi,psi],count)
+        if plot == True:
+            self.ekfplot2(np.concatenate((x_atthat,x_gpshat)),[phi,th,pn,pe,self.Vg,self.chi,psi],count)
 
         # Set to hat variables
         self.x_hat = [self.pn_hat, self.pe_hat, -self.h_hat, u, v, w, self.phi_hat, self.th_hat, self.psi_hat,self.p_hat, self.q_hat, self.r_hat] 
@@ -479,32 +480,56 @@ class kalmanFilter(Sensors):
 
     def ekfplot2(self,s,true,count):
         if self.sensor_first == True:
+            # App Thingy
             self.app = pg.QtGui.QApplication([])
             self.app.aboutToQuit.connect(self.stop)
-            self.ekfplotwin = pg.GraphicsWindow(size=(800,400))
-            # self.ekfplotwin = pg.GraphicsWindow(size=(1500,1200))
+
+            # Plot Window
+            self.ekfplotwin = pg.GraphicsWindow(size=(1200,800))
             self.ekfplotwin.setWindowTitle('Estimated States')
             self.ekfplotwin.setInteractive(True)
+
+            # Plots and subplots
             self.p1 = []
+            labels = [u'\u03C6 (rad)',u'\u03B8 (rad)','North (m)','East (m)',
+                      'Ground Speed (m/s)',u'\u03C7 (rad)',u'\u03C8 (rad)','','']
+            
+                      
             for i in xrange(3):
                 for j in xrange(3):
-                    self.p1.append(self.ekfplotwin.addPlot(i+1,j+1))
+                    if i*3 + j < 7:
+                        self.p1.append(self.ekfplotwin.addPlot(i+1,j+1))
+                        self.p1[i*3 + j].setLabel('bottom','Time',units='s')
+                        self.p1[i*3 + j].setLabel('left',labels[i*3 + j])
+                        self.p1[i*3 + j].addLegend()
+                    
+            # Curves to put on plots
             self.estcurves = []
             self.truecurves = []
+
+            # Data for pltos
             self.est = [[],[],[],[],[],[],[],[],[]]
             self.true = [[],[],[],[],[],[],[],[],[]]
+
+            # Put data on curves on correct plots
             for i in xrange(len(s)):
-                self.estcurves.append(self.p1[i].plot(pen=(0,0,255)))
-                self.truecurves.append(self.p1[i].plot(pen=(0,255,0)))
+                pen = pg.mkPen(color=(0,255,0),style=pg.QtCore.Qt.DashLine)
+                self.estcurves.append(self.p1[i].plot(pen=pen,name='est',))
+                pen = pg.mkPen(color=(0,0,255))
+                self.truecurves.append(self.p1[i].plot(pen=pen,name='true'))
                 self.est[i].append(s[i])
                 self.true[i].append(true[i])
             self.sensor_first = False
         else:
+            # Update data in plots
+            time = np.linspace(0,(len(self.est[0]) + 1)*self.dt,len(self.est[0]) + 1)
             for i in xrange(len(s)):
                 self.est[i].append(s[i])
                 self.true[i].append(true[i])
-                self.estcurves[i].setData(self.est[i])
-                self.truecurves[i].setData(self.true[i])
+                self.estcurves[i].setData(time,self.est[i])
+                self.truecurves[i].setData(time,self.true[i])
+
+            # Make it update
             self.app.processEvents()
             
     def stop(self):

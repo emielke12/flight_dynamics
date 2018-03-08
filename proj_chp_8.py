@@ -5,6 +5,7 @@ def ctrl_c(plane,x0,wind):
     # Solution empty vector
     sols = [[],[],[],[],[],[],[],[],[],[],[],[]]
     alpha,beta,va = [],[],[]
+    cmd = [[],[],[]]
     counter = 1
     plane.switch = 'air'
     
@@ -22,16 +23,22 @@ def ctrl_c(plane,x0,wind):
             if plane.t_sim >= 5.0 and plane.t_sim < 15.0:
                 plane.altitude_hold(plane.x_hat,105.0,plane.dt)
                 plane.airspeed_throttle(plane.x_hat,30.0,plane.dt)
+                cmd[0].append(105.0)
+                cmd[1].append(30.0)
                 # plane.h_hold = 105.0
                 # plane.mode(x0)
             elif plane.t_sim >= 15.0 and plane.t_sim < 25.0:
                 plane.altitude_hold(plane.x_hat,95.0,plane.dt)
                 plane.airspeed_throttle(plane.x_hat,30.0,plane.dt)
+                cmd[0].append(95.0)
+                cmd[1].append(30.0)
                 # plane.h_hold = 95.0
                 # plane.mode(x0)
             else:
                 plane.altitude_hold(plane.x_hat,100.0,plane.dt)
                 plane.airspeed_throttle(plane.x_hat,30.0,plane.dt)
+                cmd[0].append(100.0)
+                cmd[1].append(30.0)
                 # plane.h_hold = 100.0
                 # plane.mode(x0)
                 
@@ -39,13 +46,16 @@ def ctrl_c(plane,x0,wind):
             if plane.t_sim >= 1.0 and plane.t_sim < 10.0:
                 # plane.course_hold(x0, 25.0 * np.pi / 180.0, plane.dt)
                 plane.course_hold(plane.x_hat, 25.0 * np.pi / 180.0, plane.dt)
+                cmd[2].append(25 * np.pi / 180.0)
             elif plane.t_sim >=10.0 and plane.t_sim < 20.0:
                 # plane.course_hold(x0, -25.0 * np.pi / 180.0, plane.dt)
                 plane.course_hold(plane.x_hat, -25.0 * np.pi / 180.0, plane.dt)
+                cmd[2].append(-25 * np.pi / 180.0)
             else:
                 # plane.course_hold(x0, 0.0 * np.pi / 180.0, plane.dt)
                 plane.course_hold(plane.x_hat, 0.0 * np.pi / 180.0, plane.dt)
-
+                cmd[2].append(0 * np.pi / 180.0)
+                
             # Calculate Force, Airspeed, alpha, beta
             fx,fy,fz,l,m,n,va_,alpha_,beta_,wn,we,wd = plane.force_calc(x0,plane.deltas,wind)
 
@@ -56,7 +66,7 @@ def ctrl_c(plane,x0,wind):
             # plane.get_lpf(sol[-1],fx,fy,fz,wn,we,wd,counter)
 
             # Run EKF
-            plane.ekf(sol[-1],[fx,fy,fz],[wn,we,wd],counter)
+            plane.ekf(sol[-1],[fx,fy,fz],[wn,we,wd],counter,plot = False)
 
             # Put into total solution matrix for plotting
             for j in xrange(len(x0)):
@@ -87,7 +97,7 @@ def ctrl_c(plane,x0,wind):
 
             if plane.t_sim >= 40.0:
                 plt.close('all')
-                plane.plot_all_post(np.transpose(sols),alpha,beta,va)
+                plane.plot_all_post(np.transpose(sols),alpha,beta,va,cmd)
                 plt.show()
                 break
             

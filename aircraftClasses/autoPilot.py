@@ -55,14 +55,14 @@ class autoPilot(Trim):
 
         # Pitch
         self.zeta_th = 0.7
-        self.k_p_th = -self.max_deltas[0] / self.th_max
+        self.k_p_th = -self.max_deltas[0] / self.th_max * 1.0
         self.omega_n_th = np.sqrt(self.a_th2 + self.k_p_th*self.a_th3)
         self.k_d_th = (2 * self.zeta_th * self.omega_n_th - self.a_th1) / self.a_th3
         self.K_dc_th = self.k_p_th * self.a_th3 / (self.a_th2 + self.k_p_th * self.a_th3)
 
         # Altitude
-        self.W_h = 30.0 
-        self.zeta_h = 0.9
+        self.W_h = 25.0 
+        self.zeta_h = 1.5
         self.omega_n_h = 1 / self.W_h * self.omega_n_th
         self.k_p_h = 2 * self.zeta_h * self.omega_n_h / (self.K_dc_th * self.Va_0)
         self.k_i_h = self.omega_n_h**2 / (self.K_dc_th * self.Va_0)
@@ -189,7 +189,7 @@ class autoPilot(Trim):
         self.D_pitch = (2 * self.tau - Ts) / (2 * self.tau + Ts) * self.D_pitch + 2 / (2 * self.tau + Ts) * (error - self.E_pitch)
         self.E_pitch = error
 
-        u = self.k_p_th * self.E_pitch - self.k_d_th * q
+        u = self.k_p_th * self.E_pitch - self.k_d_th * self.D_pitch
         u = self.sat(u,self.max_deltas[0],-self.max_deltas[0])
 
         # u is delta_e
