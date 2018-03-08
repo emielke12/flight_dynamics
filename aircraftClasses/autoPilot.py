@@ -189,7 +189,7 @@ class autoPilot(Trim):
         self.D_pitch = (2 * self.tau - Ts) / (2 * self.tau + Ts) * self.D_pitch + 2 / (2 * self.tau + Ts) * (error - self.E_pitch)
         self.E_pitch = error
 
-        u = self.k_p_th * self.E_pitch - self.k_d_th * self.D_pitch
+        u = self.k_p_th * self.E_pitch - self.k_d_th * q
         u = self.sat(u,self.max_deltas[0],-self.max_deltas[0])
 
         # u is delta_e
