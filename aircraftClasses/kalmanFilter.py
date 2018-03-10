@@ -96,7 +96,9 @@ class kalmanFilter(Sensors):
 
         self.Pg = P_gps
         self.x_gpshat = x_gpshat
-        self.psi_hat = x_gpshat[-1]
+        self.psi_hat = x_gpshat[4]
+        self.Vg_hat = x_gpshat[2]
+        self.chi_hat = x_gpshat[3]
 
         # Plot
         if plot == True:
@@ -227,8 +229,8 @@ class kalmanFilter(Sensors):
         self.th_hat = np.arcsin(self.ax_hat / self.g)
         self.pn_hat = self.lpf(self.pn_hat, y_gps_n, self.alpha_pn)
         self.pe_hat = self.lpf(self.pe_hat, y_gps_e, self.alpha_pe)
-        self.chi_hat = self.lpf(self.chi_hat, y_gps_chi, self.alpha_chi)
-        self.Vg_hat = self.lpf(self.Vg_hat, y_gps_Vg, self.alpha_vg)
+#         self.chi_hat = self.lpf(self.chi_hat, y_gps_chi, self.alpha_chi)
+#         self.Vg_hat = self.lpf(self.Vg_hat, y_gps_Vg, self.alpha_vg)
 
         # Plot
         s = [self.pn_hat,self.pe_hat,self.h_hat,self.Vg_hat,self.chi_hat,

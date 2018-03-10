@@ -50,12 +50,10 @@ class MAVForces(MAVEOM):
         self.Va = V_a
         self.alpha = alpha
         self.beta = beta
-        # self.chi = psi + beta
+        self.gamma = th - alpha
 
         # anga2b = np.arccos((u*V_ab[0] + v*V_ab[1])/(np.linalg.norm(V_gb[0:2]) * np.linalg.norm(V_ab[0:2])))
         self.chi = psi + beta# + anga2b
-
-
 
         # Compute external forces and torques on aircraft
         C_X = self.calc_Cx(alpha)
