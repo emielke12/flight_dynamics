@@ -33,9 +33,9 @@ class autoPilot(Trim):
 
         # Design Parameters (I.E. These are the ones that you should tune)
         # Roll
-        self.k_i_phi = 0.5 
-        self.zeta_phi = 1.8 
-        self.k_p_phi = self.max_deltas[2] / self.phi_max 
+        self.k_i_phi = 0.5#0.01 
+        self.zeta_phi = 1.8#6.0 
+        self.k_p_phi = self.max_deltas[2] / self.phi_max * 1.0#0.5
         self.omega_n_phi = np.sqrt(self.k_p_phi * self.a_phi2)
         self.k_d_phi = (2 * self.zeta_phi * self.omega_n_phi - self.a_phi1) / self.a_phi2
 
@@ -54,18 +54,19 @@ class autoPilot(Trim):
         self.k_i_beta = 1 / self.a_beta2 * ((self.a_beta1 + self.a_beta2 * self.k_p_beta) / (2 * self.zeta_beta))**2
 
         # Pitch
-        self.zeta_th = 0.7
+        self.zeta_th = 0.9
         self.k_p_th = -self.max_deltas[0] / self.th_max * 1.0
         self.omega_n_th = np.sqrt(self.a_th2 + self.k_p_th*self.a_th3)
         self.k_d_th = (2 * self.zeta_th * self.omega_n_th - self.a_th1) / self.a_th3
         self.K_dc_th = self.k_p_th * self.a_th3 / (self.a_th2 + self.k_p_th * self.a_th3)
 
         # Altitude
-        self.W_h = 25.0 
-        self.zeta_h = 1.5
+        self.W_h = 40.0 
+        self.zeta_h = 5.5
         self.omega_n_h = 1 / self.W_h * self.omega_n_th
-        self.k_p_h = 2 * self.zeta_h * self.omega_n_h / (self.K_dc_th * self.Va_0)
-        self.k_i_h = self.omega_n_h**2 / (self.K_dc_th * self.Va_0)
+        self.k_p_h = 2 * self.zeta_h * self.omega_n_h / (self.K_dc_th * self.Va_0) / 2.6
+        self.k_i_h = self.omega_n_h**2 / (self.K_dc_th * self.Va_0) * 3.5
+        self.k_d_h = 0.1
 
         # Airspeed Pitch
         self.W_v2 = 8.0 
@@ -96,8 +97,9 @@ class autoPilot(Trim):
         self.D_pitch = 0.0
         self.E_pitch = 0.0
 
-        self.I_alt = 30.5
+        self.I_alt = 0.0
         self.E_alt = 0.0
+        self.D_alt = 0.0
 
         self.I_air_pitch = 0.0
         self.E_air_pitch = 0.0
@@ -201,19 +203,22 @@ class autoPilot(Trim):
 
         # PID Control Loop
         error = h_c - h
-        if abs(error) < 20.0:
+        if abs(error) < 10.0:
             self.I_alt += Ts / 2 * (error + self.E_alt)
         else:
             self.I_alt = 0
+        self.D_alt = (2 * self.tau - Ts) / (2 * self.tau + Ts) * self.D_alt + 2 / (2 * self.tau + Ts) * (error - self.E_alt)
         self.E_alt = error
 
+
+        
         # Get command (check for saturation)
-        u = self.k_p_h * self.E_alt + self.k_i_h * self.I_alt
+        u = self.k_p_h * self.E_alt + self.k_i_h * self.I_alt + self.k_d_h * self.D_alt
         u = self.sat(u,self.th_max,-self.th_max)
         
         # Integrator Anti-Windup
         if self.k_i_h != 0:
-            u_unsat = self.k_p_h * self.E_alt + self.k_i_h * self.I_alt
+            u_unsat = self.k_p_h * self.E_alt + self.k_i_h * self.I_alt + self.k_d_h * self.D_alt
             self.I_alt += Ts / self.k_i_h * (u - u_unsat)
 
         # u is th_c
