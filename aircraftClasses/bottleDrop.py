@@ -6,6 +6,7 @@ class bottleDrop(kalmanFilter):
         kalmanFilter.__init__(self,x0,trim)
         self.wind_array = []
         self.wind_avg = [0.0,0.0]
+        self.wind_psi = 0.0
 
         # If object is sphere and low speed
         self.radius = 0.25 # m
@@ -24,12 +25,14 @@ class bottleDrop(kalmanFilter):
             self.wind_array = np.roll(self.wind_array,-1,axis=0)
             self.wind_array[-1] = [wn,we]
         self.wind_avg = np.average(self.wind_array,axis=0)
+        self.wind_psi = np.arctan2(self.wind_avg[1],self.wind_avg[0])
 
-    def calc_drop_location(self,h,ptarget,x,wind):
+    def calc_drop_location(self,h,ptarget,v_des):
         # Calculate Directional Velocity
-        V = [self.Va_hat * np.cos(self.psi_hat),
-             self.Va_hat * np.sin(self.psi_hat),
-             0]
+#         V = [self.Va_hat * np.cos(self.psi_hat),
+#              self.Va_hat * np.sin(self.psi_hat),
+#              0]
+        V = v_des # Desired Velocity to use in drop equations (i.e. how do you want to approach)
 
         # Initial Position
         Z = [0,0,0]
@@ -37,9 +40,7 @@ class bottleDrop(kalmanFilter):
         # Initial Time
         Tdrop = 0.0
 
-        # Drop Location
-        pdrop = [0,0]
-
+        # Calculate Drop Position and Time
         while Z[2] < h: 
             # Calculate dynamic forces on the object
             q = self.rho * self.S_object * self.Cd_object / (2 * self.mass_object)
@@ -48,53 +49,56 @@ class bottleDrop(kalmanFilter):
                   self.g - q * V[2]**2]
 
             # Solve Difference Equations for new velocity and position
+            vprev = V
             V = np.add(V,A * self.dt)
-            Z = np.add(Z,V * self.dt)
+            Z = np.add(Z,vprev * self.dt)
 
             # Update Time vector
             Tdrop += self.dt
             
-        # Wind direction
-        psi_wind = np.atan2(self.wind_avg[1],self.wind_avg[0])
-        Rpsi = [[np.cos(psi_wind), -np.sin(psi_wind), 0],
-                [np.sin(psi_wind), np.cos(psi_wind), 0],
-                [0, 0, 1]]
+#         # Wind direction
+#         Rpsi = [[np.cos(self.wind_psi), -np.sin(self.wind_psi), 0],
+#                 [np.sin(self.wind_psi), np.cos(self.wind_psi), 0],
+#                 [0, 0, 1]]
 
         # Update drop location
-        pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), -np.matmul(Rpsi,Z)[0:2])
+#         pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), -np.matmul(Rpsi,Z)[0:2])
+        pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), -Z[0:2]) # Ground Frame?
         print 'Drop Location',pdrop
 
-        # Something is wrong with this stuff
-#         # Determine True Location
-#         self.true_bottle_path = [pdrop[0],pdrop[1],-x[2]]
-#         while self.true_bottle_path[2] < h: 
-#             sol = odeint(self.bottle_eom,x,[0.0, self.dt],args=(wind[0],wind[1],wind[2]))
-#             for i in xrange(3):
-#                 x[i + 3] = sol[-1][i + 3]
-#                 self.true_bottle_path[i].append(sol[-1][i])
+    def release_triggered(self,x,wind):
+        # Determine True Location
+        pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
+        wn,we,wd = wind
+        self.true_bottle_path = [pn,pe,-pd]
+        state = [pn,
+                 pe,
+                 -pd,
+                 u - wn,
+                 v - we,
+                 w - wd]
+        time = 0.0
+        while state[2] > 0: 
+            sol = odeint(self.bottle_eom,state,[0.0, self.dt])
+            time += self.dt
+            state = np.add(sol[-1][0:3], np.multiply(self.dt,wind))
+            for i in xrange(3):
+                self.true_bottle_path[i].append(state[i])
     
-#         # Actual hit location
-#         self.hit = [self.true_bottle_path[0][-1],self.true_bottle_path[1][-1]]
-#         print '\nAchieved Hit at: ',self.hit,'\n'
+        # Actual hit location
+        self.hit = [self.true_bottle_path[0][-1],self.true_bottle_path[1][-1]]
+        print '\nAchieved Hit at: ',self.hit,'\n'
 
-#     def bottle_eom(self,x,wn,we,wd):
-#         # Rename states
-#         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
-#         wn,we,wd = wind
+    def bottle_eom(self,x):
+        # Drag Forces
+        q = self.rho * self.S_object * self.Cd_object / (2 * self.mass_object)
 
-#         # Uses True States
-#         v = [u - wn,
-#              v - we,
-#              w - wd]
-        
-#         # Drag Forces
-#         q = self.rho * self.S_object * self.Cd_object / (2 * self.mass_object)
+        # Equations of Motion
+        xdot = [v[0],
+                v[1],
+                v[2],
+                -q * v[0]**2
+                -q * v[1]**2
+                self.g -q * v[2]**2]
 
-#         xdot = [v[0],
-#                 v[1],
-#                 v[2],
-#                 -q * v[0]**2
-#                 -q * v[1]**2
-#                 self.g -q * v[2]**2]
-
-#         return xdot
+        return xdot
