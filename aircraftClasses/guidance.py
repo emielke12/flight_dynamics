@@ -16,6 +16,9 @@ class guidanceModel():
         self.va0 = va0
         self.first = True
 
+        self.app = pg.QtGui.QApplication([])
+        self.app.aboutToQuit.connect(self.stop)
+
         # Parameters to tune
         self.bchidot = 4.5
         self.bchi = 5.0
@@ -81,8 +84,6 @@ class guidanceModel():
     def plot(self,cmd,state,auto,labels):
         if self.first == True:
             # Setup Window
-            self.app = pg.QtGui.QApplication([])
-            self.app.aboutToQuit.connect(self.stop)
             self.win = pg.GraphicsWindow(size=(1200,400))
             self.win.setWindowTitle('States')
             self.win.setInteractive(True)

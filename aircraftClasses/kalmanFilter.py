@@ -96,6 +96,8 @@ class kalmanFilter(Sensors):
 
         self.Pg = P_gps
         self.x_gpshat = x_gpshat
+        self.pn_hat = x_gpshat[0]
+        self.pe_hat = x_gpshat[1]
         self.psi_hat = x_gpshat[4]
         self.Vg_hat = x_gpshat[2]
         self.chi_hat = x_gpshat[3]

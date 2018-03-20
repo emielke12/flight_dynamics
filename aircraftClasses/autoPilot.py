@@ -41,7 +41,7 @@ class autoPilot(Trim):
 
         # Course
         self.W_chi = 17.0
-        self.zeta_chi = 1.5
+        self.zeta_chi = 1.8
         self.omega_n_chi = 1 / self.W_chi * self.omega_n_phi
         self.k_p_chi = 2 * self.zeta_chi * self.omega_n_chi * self.Va_0 / self.g
         self.k_i_chi = self.omega_n_chi**2 * self.Va_0 / self.g
@@ -55,7 +55,7 @@ class autoPilot(Trim):
 
         # Pitch
         self.zeta_th = 0.9
-        self.k_p_th = -self.max_deltas[0] / self.th_max * 1.0
+        self.k_p_th = -self.max_deltas[0] / self.th_max
         self.omega_n_th = np.sqrt(self.a_th2 + self.k_p_th*self.a_th3)
         self.k_d_th = (2 * self.zeta_th * self.omega_n_th - self.a_th1) / self.a_th3
         self.K_dc_th = self.k_p_th * self.a_th3 / (self.a_th2 + self.k_p_th * self.a_th3)
@@ -66,7 +66,7 @@ class autoPilot(Trim):
         self.omega_n_h = 1 / self.W_h * self.omega_n_th
         self.k_p_h = 2 * self.zeta_h * self.omega_n_h / (self.K_dc_th * self.Va_0) / 2.6
         self.k_i_h = self.omega_n_h**2 / (self.K_dc_th * self.Va_0) * 3.5
-        self.k_d_h = 0.1
+        self.k_d_h = 0.0 # 0.1
 
         # Airspeed Pitch
         self.W_v2 = 8.0 
@@ -144,9 +144,9 @@ class autoPilot(Trim):
         # u is delta_a
         self.deltas[1] = u
 
-    def course_hold(self,x,chi_c,Ts):        
+    def course_hold(self,x,chi_c,Ts,chi):        
         # PID Control Loop
-        error = chi_c - self.chi
+        error = chi_c - chi
         if abs(error) < self.chi_max:
             self.I_course += Ts / 2 * (error + self.E_course)
         else:
@@ -209,8 +209,6 @@ class autoPilot(Trim):
             self.I_alt = 0
         self.D_alt = (2 * self.tau - Ts) / (2 * self.tau + Ts) * self.D_alt + 2 / (2 * self.tau + Ts) * (error - self.E_alt)
         self.E_alt = error
-
-
         
         # Get command (check for saturation)
         u = self.k_p_h * self.E_alt + self.k_i_h * self.I_alt + self.k_d_h * self.D_alt
