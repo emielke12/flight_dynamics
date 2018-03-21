@@ -27,6 +27,7 @@ class kalmanFilter(Sensors):
         self.pn_hat = 0.0
         self.pe_hat = 0.0
         self.chi_hat = 0.0
+        self.psi_hat = 0.0
         self.Vg_hat = np.linalg.norm(x0[3:6])
 
         # Mid States
