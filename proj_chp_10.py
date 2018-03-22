@@ -34,6 +34,7 @@ def ctrl_c(plane,plane2,x0,wind,model):
             # Position and commanded Velocity
             p_9 = [plane.x[0],plane.x[1],plane.x[4]]
             p_est = [plane2.pn_hat,plane2.pe_hat,plane2.h_hat]
+            # p_est = [x0[0],x0[1],-x0[2]]
             cmd[4] = 30.0 # va
 
 
@@ -41,8 +42,10 @@ def ctrl_c(plane,plane2,x0,wind,model):
             if kalman == True:
                 if path_type == 'straight':
                     cmd[3], cmd[1] = plane.follow_straight_line(r,q,p_est,plane2.chi_hat)
+                    # cmd[3], cmd[1] = plane.follow_straight_line(r,q,p_est,plane2.chi)
                 elif path_type == 'orbit':
                     cmd[3], cmd[1] = plane.follow_orbit(c,rho,p_est,plane2.chi_hat)
+                    # cmd[3], cmd[1] = plane.follow_orbit(c,rho,p_est,plane2.chi)
             else:
                 if path_type == 'straight':
                     cmd[3], cmd[1] = plane.follow_straight_line(r,q,p_9,plane.x[2])
