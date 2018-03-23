@@ -79,6 +79,7 @@ class pathManager(pathFollow):
 
                 if self.half_plane(z,q,p) == True:
                     self.path_state = 1
+                    self.i += 1
 
         if flag == 1:
             return 'straight',r,q,c,rho,lamb
@@ -101,55 +102,76 @@ class pathManager(pathFollow):
             lamb = 1
         else:
             if P != self.P:
-                self.W = W
+                self.P = P
                 self.i = 1
                 self.path_state = 1
 
-        # Find dubins parameters
-        L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
+            # Find dubins parameters
+            L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
 
-        if self.path_state == 1:
-            flag = 2
-            c = cs
-            rho = R
-            lamb = lambs
+            if self.path_state == 1:
+                flag = 2
+                c = cs
+                rho = R
+                lamb = lambs
+                r = P[i-1][0:3]
+                q = q1
 
-            if self.half_plane(z1,q1,p) == True:
-                self.path_state = 2
-                
-        elif self.path_state == 2:
-            if self.half_plane(z1,q1,p) == True:
-                self.path_state = 3
+                if self.half_plane(z1,-q1,p) == True:
+                    self.path_state = 2
 
-        elif self.path_state == 3:
-            flag = 1
-            r = z1
-            q = q1
+            elif self.path_state == 2:
+                flag = 2
+                c = cs
+                rho = R
+                lamb = lambs
+                r = P[i-1][0:3]
+                q = q1
 
-            if self.half_plane(z2,q1,p) == True:
-                self.path_state = 4
+                if self.half_plane(z1,q1,p) == True:
+                    self.path_state = 3
 
-        elif self.path_state == 4:
-            flag = 2
-            c = ce
-            rho = R
-            lamb = lambe
+            elif self.path_state == 3:
+                flag = 1
+                r = z1
+                q = q1
+                rho = R
+                lamb = 1
+                c = [0,0,0]
 
-            if self.half_plane(z3,-q3,p) == True:
-                self.path_state = 5
+                if self.half_plane(z2,q1,p) == True:
+                    self.path_state = 4
 
-        elif self.path_state == 5:
-            if self.half_plane(z3,q3,p) == True:
-                self.path_state = 1
-                self.i += 1
-                L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
+            elif self.path_state == 4:
+                flag = 2
+                c = ce
+                rho = R
+                lamb = lambe
+                r = z1
+                q = q1
+
+                if self.half_plane(z3,-q3,p) == True:
+                    self.path_state = 5
+
+            elif self.path_state == 5:
+                flag = 2
+                c = ce
+                rho = R
+                lamb = lambe
+                r = z1
+                q = q1
+
+                if self.half_plane(z3,q3,p) == True:
+                    self.path_state = 1
+                    self.i += 1
+                    L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
 
         if flag == 1:
             return 'straight',r,q,c,rho,lamb
         elif flag == 2:
             return 'orbit',r,q,c,rho,lamb
 
-    def find_dubins_parameters(prev,cur,R):
+    def find_dubins_parameters(self,prev,cur,R):
         ps = prev[0:3]
         pe = cur[0:3]
         chis = prev[3]
@@ -160,10 +182,10 @@ class pathManager(pathFollow):
             return None
         Rzpi = [[0,1,0],[-1,0,0],[0,0,1]]
         Rzpi_ = [[0,-1,0],[1,0,0],[0,0,1]]
-        crs = np.add(ps,np.matmul(np.mutliply(R,Rzpi),[np.cos(chis),np.sin(chis),0]))
-        cls = np.add(ps,np.matmul(np.mutliply(R,Rzpi_),[np.cos(chis),np.sin(chis),0]))
-        cre = np.add(pe,np.matmul(np.mutliply(R,Rzpi),[np.cos(chie),np.sin(chie),0]))
-        cle = np.add(pe,np.matmul(np.mutliply(R,Rzpi_),[np.cos(chie),np.sin(chie),0]))
+        crs = np.add(ps,np.matmul(np.multiply(R,Rzpi),[np.cos(chis),np.sin(chis),0]))
+        cls = np.add(ps,np.matmul(np.multiply(R,Rzpi_),[np.cos(chis),np.sin(chis),0]))
+        cre = np.add(pe,np.matmul(np.multiply(R,Rzpi),[np.cos(chie),np.sin(chie),0]))
+        cle = np.add(pe,np.matmul(np.multiply(R,Rzpi_),[np.cos(chie),np.sin(chie),0]))
 
         # Path 1
         vartheta = np.arccos(np.dot(crs,cre)/(np.linalg.norm(crs)*np.linalg.norm(cre)))
@@ -183,7 +205,7 @@ class pathManager(pathFollow):
 
         # Path 4
         vartheta = np.arccos(np.dot(cls,cle)/(np.linalg.norm(cls)*np.linalg.norm(cle)))
-        L4 = np.linalg.norm(np.subtract(cls,cle)) + R * (2 * np.pi + chis + np.pi/2 - vartheta - np.pi/2) + R * (2 * pi + vartheta + np.pi/2 - chie - np.pi/2)
+        L4 = np.linalg.norm(np.subtract(cls,cle)) + R * (2 * np.pi + chis + np.pi/2 - vartheta - np.pi/2) + R * (2 * np.pi + vartheta + np.pi/2 - chie - np.pi/2)
 
         L = np.min([L1,L2,L3,L4])
         arg = np.argmin([L1,L2,L3,L4])
@@ -240,7 +262,7 @@ class pathManager(pathFollow):
         return R
             
         
-    def half_plane(r,n,p):
+    def half_plane(self,r,n,p):
         h = np.dot(np.transpose(np.subtract(p,r)),n)
         if h >= 0:
             return True
@@ -248,7 +270,7 @@ class pathManager(pathFollow):
             return False
             
         
-    def path_plot(self,r,q,c,rho,p,path_type='straight'):
+    def waypoint_plot(self,w,p):
         if self.t_sim < 2 * self.dt:
             # Setup Window
             self.path_win = pg.GraphicsWindow(size=(800,800))
@@ -261,33 +283,29 @@ class pathManager(pathFollow):
 
             # Data
             self.achieved_path = [[],[]]
+            self.waypoint_path = [[],[]]
 
             # Put data on curves
             pen = pg.mkPen(color=(0,255,0),style=pg.QtCore.Qt.DashLine)
-            self.command_path_curve = self.path_p.plot(pen=pen,name='Command')
+            self.waypoint_path_curve = self.path_p.plot(pen=pen,name='Command')
             pen = pg.mkPen(color=(0,0,255))
             self.achieved_path_curve = self.path_p.plot(pen=pen,name='Achieved')
             
             self.achieved_path[0].append(p[0])
             self.achieved_path[1].append(p[1])
-            chi_q = np.arctan2(q[1],q[0])
+            for i in xrange(len(w)):
+                self.waypoint_path[0].append(w[i][0])
+                self.waypoint_path[1].append(w[i][1])
             
         else:
             self.achieved_path[0].append(p[0])
             self.achieved_path[1].append(p[1])
             self.achieved_path_curve.setData(self.achieved_path[1],self.achieved_path[0])
-            
-            chi_q = np.arctan2(q[1],q[0])
-
-            if path_type == 'straight':
-                self.command_path = [[r[0],r[0] + self.t_sim * self.x[-1] * np.cos(chi_q)],
-                                     [r[1],r[1] + self.t_sim * self.x[-1] * np.sin(chi_q)]]
-                self.command_path_curve.setData(self.command_path[1],self.command_path[0])
-            elif path_type == 'orbit':
-                theta = np.linspace(0,2 * np.pi, 50)
-                self.command_path = [np.add(c[0],np.multiply(rho,np.cos(theta))),
-                                     np.add(c[1],np.multiply(rho,np.sin(theta)))]
-                self.command_path_curve.setData(self.command_path[1],self.command_path[0])
+            self.waypoint_path = [[],[]]
+            for i in xrange(len(w)):
+                self.waypoint_path[0].append(w[i][0])
+                self.waypoint_path[1].append(w[i][1])
+            self.waypoint_path_curve.setData(self.waypoint_path[0],self.waypoint_path[1])
             
             # Update Plot
             self.app.processEvents()
