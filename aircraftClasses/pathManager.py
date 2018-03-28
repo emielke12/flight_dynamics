@@ -108,6 +108,7 @@ class pathManager(pathFollow):
 
             # Find dubins parameters
             L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
+            self.plot_straight(z1,z2)
             if self.path_state == 1:
                 flag = 2
                 c = cs
@@ -146,8 +147,8 @@ class pathManager(pathFollow):
                 c = ce
                 rho = R
                 lamb = lambe
-                r = z1
-                q = q1
+                r = z2
+                q = q3
 
                 if self.half_plane(z3,-q3,p) == True:
                     self.path_state = 5
@@ -157,13 +158,13 @@ class pathManager(pathFollow):
                 c = ce
                 rho = R
                 lamb = lambe
-                r = z1
-                q = q1
+                r = z2
+                q = q3
 
                 if self.half_plane(z3,q3,p) == True:
                     self.path_state = 1
                     self.i += 1
-                    # L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
+#                     L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
 
         if flag == 1:
             return 'straight',r,q,c,rho,lamb
@@ -179,61 +180,62 @@ class pathManager(pathFollow):
             return None
         elif R < self.Rmin:
             return None
-        Rzpi = [[0,1,0],[-1,0,0],[0,0,1]]
-        Rzpi_ = [[0,-1,0],[1,0,0],[0,0,1]]
+        Rzpi = self.rotmatz(np.pi/2)
+        Rzpi_ = self.rotmatz(-np.pi/2)
         crs = np.add(ps,np.matmul(np.multiply(R,Rzpi),[np.cos(chis),np.sin(chis),0]))
         cls = np.add(ps,np.matmul(np.multiply(R,Rzpi_),[np.cos(chis),np.sin(chis),0]))
         cre = np.add(pe,np.matmul(np.multiply(R,Rzpi),[np.cos(chie),np.sin(chie),0]))
         cle = np.add(pe,np.matmul(np.multiply(R,Rzpi_),[np.cos(chie),np.sin(chie),0]))
 
         # Path 1
-        vartheta = np.arccos(np.dot(crs,cre)/(np.linalg.norm(crs)*np.linalg.norm(cre)))
+        vartheta = self.wrap(self.dot_angle(crs,cre))
         ang1 = self.wrap(vartheta - np.pi/2)
         ang2 = self.wrap(chis - np.pi/2)
         ang3 = self.wrap(2 * np.pi + ang1 - ang2)
         ang4 = self.wrap(chie - np.pi/2)
         ang5 = self.wrap(vartheta - np.pi/2)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
-        L1 = np.linalg.norm(np.subtract(crs,cre)) + R * ang3 + R * ang6
+        L1 = np.linalg.norm(np.subtract(crs,cre)) + R * self.wrap(ang3 + ang6)
 
         # Path 2
-        vartheta = np.arccos(np.dot(crs,cle)/(np.linalg.norm(crs)*np.linalg.norm(cle)))
+        vartheta = self.wrap(self.dot_angle(crs,cle))
         l = np.linalg.norm(np.subtract(cle,crs))
-        vartheta2 = vartheta - np.pi/2 + np.arcsin(2 * R / l)
+        vartheta2 = self.wrap(vartheta - np.pi/2 + np.arcsin(2 * R / l))
         ang1 = self.wrap(vartheta2)
         ang2 = self.wrap(chis - np.pi/2)
         ang3 = self.wrap(2 * np.pi + ang1 - ang2)
         ang4 = self.wrap(vartheta2 + np.pi)
         ang5 = self.wrap(chie + np.pi/2)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
-        L2 = np.sqrt(l**2 - 4 * R**2) + R * ang3 + R * ang6
+        L2 = np.sqrt(l**2 - 4 * R**2) + R * self.wrap(ang3 + ang6)
 
         # Path 3
-        vartheta = np.arccos(np.dot(cls,cre)/(np.linalg.norm(cls)*np.linalg.norm(cre)))
+        vartheta = self.wrap(self.dot_angle(cls,cre))
         l = np.linalg.norm(np.subtract(cre,cls))
-        vartheta2 = np.arccos(2 * R / l)
+        vartheta2 = self.wrap(np.arccos(2 * R / l))
         ang1 = self.wrap(chis + np.pi/2)
         ang2 = self.wrap(vartheta + vartheta2)
         ang3 = self.wrap(2 * np.pi + ang1 - ang2)
         ang4 = self.wrap(chie - np.pi/2)
         ang5 = self.wrap(vartheta + vartheta2 - np.pi)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
-        L3 = np.sqrt(l**2 - 4 * R**2) + R * ang3 + R * ang6
+        L3 = np.sqrt(l**2 - 4 * R**2) + R * self.wrap(ang3 + ang6)
 
         # Path 4
-        vartheta = np.arccos(np.dot(cls,cle)/(np.linalg.norm(cls)*np.linalg.norm(cle)))
+        vartheta = self.wrap(self.dot_angle(cls,cle))
         ang1 = self.wrap(chis + np.pi/2)
         ang2 = self.wrap(vartheta + np.pi/2)
         ang3 = self.wrap(2 * np.pi + ang1 - ang2)
         ang4 = self.wrap(vartheta + np.pi/2)
         ang5 = self.wrap(chie + np.pi/2)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
-        L4 = np.linalg.norm(np.subtract(cls,cle)) + R * ang3 + R * ang6
-
+        L4 = np.linalg.norm(np.subtract(cls,cle)) + R * self.wrap(ang3 + ang6)
+        self.plot_circles(cls,cle,crs,cre,R)
         L = np.min([L1,L2,L3,L4])
         arg = np.argmin([L1,L2,L3,L4])
         e1 = [1,0,0]
 
+        # RSR
         if arg == 0:
             cs = crs
             lambs = 1
@@ -242,33 +244,36 @@ class pathManager(pathFollow):
             q1 = np.subtract(ce,cs)/np.linalg.norm(np.subtract(ce,cs))
             z1 = np.add(cs,np.matmul(np.multiply(R,Rzpi_),q1))
             z2 = np.add(ce,np.matmul(np.multiply(R,Rzpi_),q1))
+        # RSL
         elif arg == 1:
             cs = crs
             lambs = 1
             ce = cle
             lambe = -1
             l = np.linalg.norm(np.subtract(ce,cs))
-            vartheta = np.arccos(np.dot(ce,cs)/(np.linalg.norm(cs)*np.linalg.norm(ce)))
-            vartheta2 = vartheta - np.pi/2 + np.arcsin(2*R/l)
-            q1 = np.matmul(self.rotmatz(vartheta2 + np.pi/2),e1)
-            z1 = np.add(cs,np.matmul(np.multiply(R,self.rotmatz(vartheta2)),e1))
-            z2 = np.add(ce,np.matmul(np.multiply(R,self.rotmatz(vartheta2 + np.pi)),e1))
+            vartheta = self.wrap(self.dot_angle(cs,ce))
+            vartheta2 = self.wrap(vartheta - np.pi/2 + np.arcsin(2*R/l))
+            q1 = np.dot(self.rotmatz(self.wrap(vartheta2 + np.pi/2)),e1)
+            z1 = np.add(cs,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta2))),e1))
+            z2 = np.add(ce,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta2 + np.pi))),e1))
+        # LSR
         elif arg == 2:
             cs = cls
             lambs = -1
             ce = cre
             lambe = 1
             l = np.linalg.norm(np.subtract(ce,cs))
-            vartheta = np.arccos(np.dot(ce,cs)/(np.linalg.norm(cs)*np.linalg.norm(ce)))
-            vartheta2 = vartheta - np.pi/2 + np.arcsin(2*R/l)
-            q1 = np.matmul(self.rotmatz(vartheta + vartheta2 - np.pi/2),e1)
-            z1 = np.add(cs,np.matmul(np.multiply(R,self.rotmatz(vartheta + vartheta2)),e1))
-            z2 = np.add(ce,np.matmul(np.multiply(R,self.rotmatz(vartheta + vartheta2 - np.pi)),e1))
+            vartheta = self.wrap(self.dot_angle(cs,ce))
+            vartheta2 = self.wrap(vartheta - np.pi/2 + np.arcsin(2*R/l))
+            q1 = np.dot(self.rotmatz(self.wrap(vartheta + vartheta2 - np.pi/2)),e1)
+            z1 = np.add(cs,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta + vartheta2))),e1))
+            z2 = np.add(ce,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta + vartheta2 - np.pi))),e1))
+        # LSL
         elif arg == 3:
             cs = cls
-            lambs = 1
+            lambs = -1
             ce = cle
-            lambe = 1
+            lambe = -1
             q1 = np.subtract(ce,cs)/np.linalg.norm(np.subtract(ce,cs))
             z1 = np.add(cs,np.matmul(np.multiply(R,Rzpi),q1))
             z2 = np.add(ce,np.matmul(np.multiply(R,Rzpi),q1))
@@ -279,8 +284,8 @@ class pathManager(pathFollow):
         return L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3
             
     def rotmatz(self,angle):
-        R = [[np.cos(angle),np.sin(angle),0],
-             [-np.sin(angle),np.cos(angle),0],
+        R = [[np.cos(angle),-np.sin(angle),0],
+             [np.sin(angle),np.cos(angle),0],
              [0,0,1]]
         return R
             
@@ -293,8 +298,31 @@ class pathManager(pathFollow):
             return False
 
     def wrap(self,ang):
-        return (ang + np.pi) % (2 * np.pi) - np.pi
+        return (ang) % (2 * np.pi)
+
+    def dot_angle(self,v1,v2):
+        return np.arccos(np.clip(np.dot(v1,v2)/np.linalg.norm(v1)/np.linalg.norm(v2),-1.0,1.0))
         
+    def plot_straight(self,start,end):
+        data = [[start[0],end[0]],
+                [start[1],end[1]]]
+        self.straight_curve.setData(data[1],data[0])
+
+    def plot_circles(self,cls,cle,crs,cre,rho):
+        theta = np.linspace(0,2 * np.pi, 50)
+        circle = [np.add(cls[0],np.multiply(rho,np.cos(theta))),
+                  np.add(cls[1],np.multiply(rho,np.sin(theta)))]
+        self.cls_curve.setData(circle[1],circle[0])
+        circle = [np.add(cle[0],np.multiply(rho,np.cos(theta))),
+                  np.add(cle[1],np.multiply(rho,np.sin(theta)))]
+        self.cle_curve.setData(circle[1],circle[0])
+        circle = [np.add(crs[0],np.multiply(rho,np.cos(theta))),
+                  np.add(crs[1],np.multiply(rho,np.sin(theta)))]
+        self.crs_curve.setData(circle[1],circle[0])
+        circle = [np.add(cre[0],np.multiply(rho,np.cos(theta))),
+                  np.add(cre[1],np.multiply(rho,np.sin(theta)))]
+        self.cre_curve.setData(circle[1],circle[0])
+
     def waypoint_plot(self,w,p):
         if self.t_sim < 2 * self.dt:
             # Setup Window
@@ -315,13 +343,19 @@ class pathManager(pathFollow):
             self.waypoint_path_curve = self.path_p.plot(pen=pen,name='Command')
             pen = pg.mkPen(color=(0,0,255))
             self.achieved_path_curve = self.path_p.plot(pen=pen,name='Achieved')
-            
+            pen = pg.mkPen(color=(255,0,255),style=pg.QtCore.Qt.DashLine)
+            self.crs_curve = self.path_p.plot(pen=pen)
+            self.cls_curve = self.path_p.plot(pen=pen)
+            self.cre_curve = self.path_p.plot(pen=pen)
+            self.cle_curve = self.path_p.plot(pen=pen)
+            self.straight_curve = self.path_p.plot(pen=pen)
+                           
             self.achieved_path[0].append(p[0])
             self.achieved_path[1].append(p[1])
             for i in xrange(len(w)):
                 self.waypoint_path[0].append(w[i][0])
                 self.waypoint_path[1].append(w[i][1])
-            
+
         else:
             self.achieved_path[0].append(p[0])
             self.achieved_path[1].append(p[1])
@@ -330,7 +364,7 @@ class pathManager(pathFollow):
             for i in xrange(len(w)):
                 self.waypoint_path[0].append(w[i][0])
                 self.waypoint_path[1].append(w[i][1])
-            self.waypoint_path_curve.setData(self.waypoint_path[0],self.waypoint_path[1])
+            self.waypoint_path_curve.setData(self.waypoint_path[1],self.waypoint_path[0])
             
             # Update Plot
             self.app.processEvents()
