@@ -47,11 +47,10 @@ def ctrl_c(plane,plane2,x0,wind,model):
                 # path_type, r, q, c, rho, plane.lamb = plane.algorithm_6(W,p_9,R)
 
                 # Part 3
-                P = [[0,0,0,7*np.pi/4],[400,0,0,np.pi/4],[400,400,0,3*np.pi/4],[0,400,0,5*np.pi/4],[0,0,0,7*np.pi/4],[400,0,0,np.pi/4]]
+                P = [[0,0,0,-0.01],[400,0,0,np.pi/4],[400,400,0,3*np.pi/4],[0,400,0,5*np.pi/4],[0,0,0,7*np.pi/4],[400,0,0,np.pi/4]]
                 W = [[0,0,0],[400,0,0],[400,400,0],[0,400,0],[0,0,0],[400,0,0]]
                 R = 100
                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
-                print plane.path_state
 
             # Determine Commands for autopilot
             if kalman == True:

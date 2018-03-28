@@ -108,13 +108,12 @@ class pathManager(pathFollow):
 
             # Find dubins parameters
             L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
-
             if self.path_state == 1:
                 flag = 2
                 c = cs
                 rho = R
                 lamb = lambs
-                r = P[i-1][0:3]
+                r = P[self.i-1][0:3]
                 q = q1
 
                 if self.half_plane(z1,-q1,p) == True:
@@ -125,7 +124,7 @@ class pathManager(pathFollow):
                 c = cs
                 rho = R
                 lamb = lambs
-                r = P[i-1][0:3]
+                r = P[self.i-1][0:3]
                 q = q1
 
                 if self.half_plane(z1,q1,p) == True:
@@ -164,7 +163,7 @@ class pathManager(pathFollow):
                 if self.half_plane(z3,q3,p) == True:
                     self.path_state = 1
                     self.i += 1
-                    L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
+                    # L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
 
         if flag == 1:
             return 'straight',r,q,c,rho,lamb
@@ -189,23 +188,47 @@ class pathManager(pathFollow):
 
         # Path 1
         vartheta = np.arccos(np.dot(crs,cre)/(np.linalg.norm(crs)*np.linalg.norm(cre)))
-        L1 = np.linalg.norm(np.subtract(crs,cre)) + R * (2 * np.pi + vartheta - np.pi/2 - chis + np.pi/2) + R * (2 * np.pi + chie - np.pi/2 - vartheta + np.pi/2)
+        ang1 = self.wrap(vartheta - np.pi/2)
+        ang2 = self.wrap(chis - np.pi/2)
+        ang3 = self.wrap(2 * np.pi + ang1 - ang2)
+        ang4 = self.wrap(chie - np.pi/2)
+        ang5 = self.wrap(vartheta - np.pi/2)
+        ang6 = self.wrap(2 * np.pi + ang4 - ang5)
+        L1 = np.linalg.norm(np.subtract(crs,cre)) + R * ang3 + R * ang6
 
         # Path 2
         vartheta = np.arccos(np.dot(crs,cle)/(np.linalg.norm(crs)*np.linalg.norm(cle)))
         l = np.linalg.norm(np.subtract(cle,crs))
         vartheta2 = vartheta - np.pi/2 + np.arcsin(2 * R / l)
-        L2 = np.sqrt(l**2 - 4 * R**2) + R * (2 * np.pi + vartheta2 - chis + np.pi/2) + R * (2 * np.pi + vartheta2 + np.pi - chie - np.pi/2)
+        ang1 = self.wrap(vartheta2)
+        ang2 = self.wrap(chis - np.pi/2)
+        ang3 = self.wrap(2 * np.pi + ang1 - ang2)
+        ang4 = self.wrap(vartheta2 + np.pi)
+        ang5 = self.wrap(chie + np.pi/2)
+        ang6 = self.wrap(2 * np.pi + ang4 - ang5)
+        L2 = np.sqrt(l**2 - 4 * R**2) + R * ang3 + R * ang6
 
         # Path 3
         vartheta = np.arccos(np.dot(cls,cre)/(np.linalg.norm(cls)*np.linalg.norm(cre)))
         l = np.linalg.norm(np.subtract(cre,cls))
         vartheta2 = np.arccos(2 * R / l)
-        L3 = np.sqrt(l**2 - 4 * R**2) + R * (2 * np.pi + chis + np.pi/2 - vartheta - vartheta2) + R * (2 * np.pi + chie - np.pi/2 - vartheta - vartheta2 + np.pi)
+        ang1 = self.wrap(chis + np.pi/2)
+        ang2 = self.wrap(vartheta + vartheta2)
+        ang3 = self.wrap(2 * np.pi + ang1 - ang2)
+        ang4 = self.wrap(chie - np.pi/2)
+        ang5 = self.wrap(vartheta + vartheta2 - np.pi)
+        ang6 = self.wrap(2 * np.pi + ang4 - ang5)
+        L3 = np.sqrt(l**2 - 4 * R**2) + R * ang3 + R * ang6
 
         # Path 4
         vartheta = np.arccos(np.dot(cls,cle)/(np.linalg.norm(cls)*np.linalg.norm(cle)))
-        L4 = np.linalg.norm(np.subtract(cls,cle)) + R * (2 * np.pi + chis + np.pi/2 - vartheta - np.pi/2) + R * (2 * np.pi + vartheta + np.pi/2 - chie - np.pi/2)
+        ang1 = self.wrap(chis + np.pi/2)
+        ang2 = self.wrap(vartheta + np.pi/2)
+        ang3 = self.wrap(2 * np.pi + ang1 - ang2)
+        ang4 = self.wrap(vartheta + np.pi/2)
+        ang5 = self.wrap(chie + np.pi/2)
+        ang6 = self.wrap(2 * np.pi + ang4 - ang5)
+        L4 = np.linalg.norm(np.subtract(cls,cle)) + R * ang3 + R * ang6
 
         L = np.min([L1,L2,L3,L4])
         arg = np.argmin([L1,L2,L3,L4])
@@ -234,7 +257,7 @@ class pathManager(pathFollow):
             cs = cls
             lambs = -1
             ce = cre
-            lambe = +1
+            lambe = 1
             l = np.linalg.norm(np.subtract(ce,cs))
             vartheta = np.arccos(np.dot(ce,cs)/(np.linalg.norm(cs)*np.linalg.norm(ce)))
             vartheta2 = vartheta - np.pi/2 + np.arcsin(2*R/l)
@@ -268,7 +291,9 @@ class pathManager(pathFollow):
             return True
         else:
             return False
-            
+
+    def wrap(self,ang):
+        return (ang + np.pi) % (2 * np.pi) - np.pi
         
     def waypoint_plot(self,w,p):
         if self.t_sim < 2 * self.dt:
