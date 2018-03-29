@@ -230,7 +230,7 @@ class pathManager(pathFollow):
         ang5 = self.wrap(chie + np.pi/2)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
         L4 = np.linalg.norm(np.subtract(cls,cle)) + R * self.wrap(ang3 + ang6)
-        self.plot_circles(cls,cle,crs,cre,R)
+
         L = np.min([L1,L2,L3,L4])
         arg = np.argmin([L1,L2,L3,L4])
         e1 = [1,0,0]
@@ -253,7 +253,7 @@ class pathManager(pathFollow):
             l = np.linalg.norm(np.subtract(ce,cs))
             vartheta = self.wrap(self.dot_angle(cs,ce))
             vartheta2 = self.wrap(vartheta - np.pi/2 + np.arcsin(2*R/l))
-            q1 = np.dot(self.rotmatz(self.wrap(vartheta2 + np.pi/2)),e1)
+            q1 = np.matmul(self.rotmatz(vartheta2 + np.pi/2),e1)
             z1 = np.add(cs,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta2))),e1))
             z2 = np.add(ce,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta2 + np.pi))),e1))
         # LSR
@@ -264,8 +264,8 @@ class pathManager(pathFollow):
             lambe = 1
             l = np.linalg.norm(np.subtract(ce,cs))
             vartheta = self.wrap(self.dot_angle(cs,ce))
-            vartheta2 = self.wrap(vartheta - np.pi/2 + np.arcsin(2*R/l))
-            q1 = np.dot(self.rotmatz(self.wrap(vartheta + vartheta2 - np.pi/2)),e1)
+            vartheta2 = self.wrap(np.arccos(2*R/l))
+            q1 = np.matmul(self.rotmatz(vartheta + vartheta2 - np.pi/2),e1)
             z1 = np.add(cs,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta + vartheta2))),e1))
             z2 = np.add(ce,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta + vartheta2 - np.pi))),e1))
         # LSL
@@ -278,6 +278,7 @@ class pathManager(pathFollow):
             z1 = np.add(cs,np.matmul(np.multiply(R,Rzpi),q1))
             z2 = np.add(ce,np.matmul(np.multiply(R,Rzpi),q1))
 
+        self.plot_circles(cs,ce,R)
         z3 = pe
         q3 = np.matmul(self.rotmatz(chie),e1)
 
@@ -308,19 +309,25 @@ class pathManager(pathFollow):
                 [start[1],end[1]]]
         self.straight_curve.setData(data[1],data[0])
 
-    def plot_circles(self,cls,cle,crs,cre,rho):
+    def plot_circles(self,cs,ce,rho):
         theta = np.linspace(0,2 * np.pi, 50)
-        circle = [np.add(cls[0],np.multiply(rho,np.cos(theta))),
-                  np.add(cls[1],np.multiply(rho,np.sin(theta)))]
-        self.cls_curve.setData(circle[1],circle[0])
-        circle = [np.add(cle[0],np.multiply(rho,np.cos(theta))),
-                  np.add(cle[1],np.multiply(rho,np.sin(theta)))]
-        self.cle_curve.setData(circle[1],circle[0])
-        circle = [np.add(crs[0],np.multiply(rho,np.cos(theta))),
-                  np.add(crs[1],np.multiply(rho,np.sin(theta)))]
+#         circle = [np.add(cls[0],np.multiply(rho,np.cos(theta))),
+#                   np.add(cls[1],np.multiply(rho,np.sin(theta)))]
+#         self.cls_curve.setData(circle[1],circle[0])
+#         circle = [np.add(cle[0],np.multiply(rho,np.cos(theta))),
+#                   np.add(cle[1],np.multiply(rho,np.sin(theta)))]
+#         self.cle_curve.setData(circle[1],circle[0])
+#         circle = [np.add(crs[0],np.multiply(rho,np.cos(theta))),
+#                   np.add(crs[1],np.multiply(rho,np.sin(theta)))]
+#         self.crs_curve.setData(circle[1],circle[0])
+#         circle = [np.add(cre[0],np.multiply(rho,np.cos(theta))),
+#                   np.add(cre[1],np.multiply(rho,np.sin(theta)))]
+#         self.cre_curve.setData(circle[1],circle[0])
+        circle = [np.add(cs[0],np.multiply(rho,np.cos(theta))),
+                  np.add(cs[1],np.multiply(rho,np.sin(theta)))]
         self.crs_curve.setData(circle[1],circle[0])
-        circle = [np.add(cre[0],np.multiply(rho,np.cos(theta))),
-                  np.add(cre[1],np.multiply(rho,np.sin(theta)))]
+        circle = [np.add(ce[0],np.multiply(rho,np.cos(theta))),
+                  np.add(ce[1],np.multiply(rho,np.sin(theta)))]
         self.cre_curve.setData(circle[1],circle[0])
 
     def waypoint_plot(self,w,p):

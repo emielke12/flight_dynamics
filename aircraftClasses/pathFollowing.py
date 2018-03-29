@@ -82,8 +82,8 @@ class pathFollow(guidanceModel):
             varphi -= 2 * np.pi    
 
         # Commanded course angle
-        # chi_ff = np.arctan(self.va0**2 / (9.81 * rho * 2.0)) * self.lamb
-        chi_ff = 0.0
+        chi_ff = np.arctan(self.va0**2 / (9.81 * rho * 2.0)) * self.lamb
+#         chi_ff = 0.0
         chi_c =  varphi + self.lamb * (np.pi / 2 + np.arctan(self.k_orbit * (d - rho) / rho)) + chi_ff
         
         return h_c, chi_c
