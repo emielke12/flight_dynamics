@@ -253,7 +253,7 @@ class pathManager(pathFollow):
             l = np.linalg.norm(np.subtract(ce,cs))
             vartheta = self.wrap(self.dot_angle(cs,ce))
             vartheta2 = self.wrap(vartheta - np.pi/2 + np.arcsin(2*R/l))
-            q1 = np.matmul(self.rotmatz(vartheta2 + np.pi/2),e1)
+            q1 = np.matmul(self.rotmatz(self.wrap(vartheta2 + np.pi/2)),e1)
             z1 = np.add(cs,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta2))),e1))
             z2 = np.add(ce,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta2 + np.pi))),e1))
         # LSR
@@ -265,7 +265,7 @@ class pathManager(pathFollow):
             l = np.linalg.norm(np.subtract(ce,cs))
             vartheta = self.wrap(self.dot_angle(cs,ce))
             vartheta2 = self.wrap(np.arccos(2*R/l))
-            q1 = np.matmul(self.rotmatz(vartheta + vartheta2 - np.pi/2),e1)
+            q1 = np.matmul(self.rotmatz(self.wrap(vartheta + vartheta2 - np.pi/2)),e1)
             z1 = np.add(cs,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta + vartheta2))),e1))
             z2 = np.add(ce,np.matmul(np.multiply(R,self.rotmatz(self.wrap(vartheta + vartheta2 - np.pi))),e1))
         # LSL
