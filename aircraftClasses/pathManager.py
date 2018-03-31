@@ -6,7 +6,7 @@ class pathManager(pathFollow):
 
         self.W = 0.0 # Waypoint path
         self.P = 0.0 # Dubins Configuration Path
-        self.Rmin = 100.0 # Minimum turn radius
+        self.Rmin = 50.0 # Minimum turn radius
 
     def algorithm_5(self,W,p):
         '''
@@ -107,6 +107,7 @@ class pathManager(pathFollow):
                 self.path_state = 1
 
             # Find dubins parameters
+            print P[self.i-1],P[self.i],R
             L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
             self.plot_straight(z1,z2)
             if self.path_state == 1:
@@ -176,9 +177,12 @@ class pathManager(pathFollow):
         pe = cur[0:3]
         chis = prev[3]
         chie = cur[3]
+        print ps,pe
         if np.linalg.norm(np.subtract(ps,pe)) < 3 * R:
+            print 'Radius problem'
             return None
         elif R < self.Rmin:
+            print 'Radius too Small'
             return None
         Rzpi = self.rotmatz(np.pi/2)
         Rzpi_ = self.rotmatz(-np.pi/2)

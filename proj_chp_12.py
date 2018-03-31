@@ -34,12 +34,13 @@ def ctrl_c(plane,plane2,x0,wind,model):
                 W = [[0,0,100]]
 
             elif plane.t_sim >= 0.02 and plane.t_sim < 0.03:
-                R = 100
+                R = 60
                 P = plane.planRRT([p_9[0], p_9[1], -p_9[2]],[340,470,-100],plane.x[1])
+                print type(P),P
                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
 
             elif plane.t_sim >= 0.03:
-                R = 100
+                R = 60
                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
 
             # Determine Commands for autopilot
@@ -77,16 +78,16 @@ def ctrl_c(plane,plane2,x0,wind,model):
             plane2.t_sim += plane2.dt
             counter += 1
 
-#             # Plot
-#             commands = [cmd[1],cmd[3],cmd[4]]
-#             states = [plane.x[2],plane.x[4],plane.x[6]]
-#             autostates = [plane2.chi_hat,plane2.h_hat,plane2.Va_hat]
-#             labels = [u'\u03C7 (rad)','h (m)','Va (m/s)'] # chi, height, airspeed
-#             # plane.plot(commands,states,autostates,labels)
-#             if kalman == True:
-#                 plane.waypoint_plot(W,p_est)
-#             else:
-#                 plane.waypoint_plot(W,p_9)
+            # Plot
+            commands = [cmd[1],cmd[3],cmd[4]]
+            states = [plane.x[2],plane.x[4],plane.x[6]]
+            autostates = [plane2.chi_hat,plane2.h_hat,plane2.Va_hat]
+            labels = [u'\u03C7 (rad)','h (m)','Va (m/s)'] # chi, height, airspeed
+            # plane.plot(commands,states,autostates,labels)
+            if kalman == True:
+                plane.waypoint_plot(W,p_est)
+            else:
+                plane.waypoint_plot(W,p_9)
             
             # Update initial state
             x0 = sol[-1,:]

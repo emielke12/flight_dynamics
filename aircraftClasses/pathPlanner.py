@@ -38,7 +38,7 @@ class pathPlanner(pathManager):
         P = path_out[:,0:4]
         ps = [ps[0],ps[1],ps[2],chi]
         P = np.concatenate((np.reshape(ps,(1,4)),P))
-        return P
+        return P.tolist()
 
     def generateRandomNode(self,pd,chi):
         pn = self.map_width * abs(np.random.randn(1))
