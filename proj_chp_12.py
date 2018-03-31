@@ -33,8 +33,13 @@ def ctrl_c(plane,plane2,x0,wind,model):
                 path_type = 'straight'
                 W = [[0,0,100]]
 
-            elif plane.t_sim >= 0.02:
-                plane.planRRT([p_9[0], p_9[1], -p_9[2]],[4123,2125,-100])
+            elif plane.t_sim >= 0.02 and plane.t_sim < 0.03:
+                R = 100
+                P = plane.planRRT([p_9[0], p_9[1], -p_9[2]],[340,470,-100],plane.x[1])
+                path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
+
+            elif plane.t_sim >= 0.03:
+                R = 100
                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
 
             # Determine Commands for autopilot

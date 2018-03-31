@@ -5,20 +5,20 @@ class pathPlanner(pathManager):
     def __init__(self,va0 = 30.0,model=1):
         pathManager.__init__(self,va0,model)
 
-        self.map_width = 5000
-        self.map_height = 5000
-        self.map_space = 500
+        self.map_width = 1000
+        self.map_height = 1000
+        self.map_space = 150
         self.map_x = np.arange(self.map_space,self.map_width,self.map_space)
         self.map_lx = np.arange(self.map_space,self.map_width,self.map_space)
         self.map_ly = np.arange(self.map_space,self.map_width,self.map_space)
         self.map_x = np.tile(self.map_x,(len(self.map_x),1))
         self.map_y = np.transpose(self.map_x)
         self.building_width = 20
-        self.map_heights = np.ones(np.shape(self.map_y)) * np.random.randn() * 30
+        s = np.shape(self.map_y)
+        self.map_heights = np.abs(np.random.randn(s[0],s[1])) * 100
 
-    def planRRT(self,ps,pe):
+    def planRRT(self,ps,pe,chi):
         segmentLength = 100
-        chi = 0
         # N E D chi cost parent idx flag_connect_to_goal
         start_node = np.reshape([ps[0], ps[1], pe[2], chi, 0, 0, 0],(1,7))
         end_node = np.reshape([pe[0], pe[1], pe[2], chi, 0, 0, 0],(1,7))
@@ -28,16 +28,17 @@ class pathPlanner(pathManager):
             path = [start_node, end_node];
         else:
             numPaths = 0
-            while numPaths < 2:
+            while numPaths < 1:
                 tree, flag = self.extendTree(tree,end_node,segmentLength,pe[2],chi)
                 numPaths = numPaths + flag
-                print numPaths
 
         path = self.findMinimumPath(tree,end_node[0])
-        print path
         path_out = self.smoothPath(path)
-        print path_out
-        # PLOT?
+        self.plot_paths(path,path_out)
+        P = path_out[:,0:4]
+        ps = [ps[0],ps[1],ps[2],chi]
+        P = np.concatenate((np.reshape(ps,(1,4)),P))
+        return P
 
     def generateRandomNode(self,pd,chi):
         pn = self.map_width * abs(np.random.randn(1))
@@ -114,25 +115,39 @@ class pathPlanner(pathManager):
         connectingNodes = []
         for i in xrange(np.size(tree,0)):
             if tree[i,-1] == 1:
-                connectingNodes.append(tree[i,:])
-        tmp = min(connectingNodes[:,4])
-        idx = np.argmin(connectingNodes[:,4])
-        
-        path = [connectingNodes[idx,:], end_node]
-        parent_node = connectingNodes[idx,5]
-        
+                connectingNodes.append(tree[i,:].tolist())
+        connectingNodes = np.transpose(connectingNodes)
+        tmp = min(connectingNodes[4,:])
+        idx = np.argmin(connectingNodes[4,:])
+        connectingNodes = np.transpose(connectingNodes)
+        path = [connectingNodes[idx,:].tolist(), end_node.tolist()]
+        parent_node = int(connectingNodes[idx,5])
         while parent_node > 1:
-            parent_node = tree[parent_node,5]
-            path = [tree[parent_node,:], path]
+            parent_node = int(tree[parent_node,5])
+            path = np.concatenate((np.reshape(tree[parent_node,:],(1,7)),path))
             
         return path
 
     def smoothPath(self,path):
-        newPath = path[0,:]
+        newPath = np.reshape(path[0,:],(1,7))
         ptr = 2
-        while ptr <= np.size(path,1) - 1:
-            if self.collision(newPath[-1,:], path[ptr+1,:]) != 0:
-                newPath = [newPath, path[ptr,:]]
+        while ptr <= np.size(path,0) - 1:
+            if self.collision(deepcopy(newPath[-1,:]), path[ptr,:]) != 0:
+                newPath = np.concatenate((newPath,np.reshape(path[ptr-1,:],(1,7))))
             ptr += 1
-        newPath = [newPath, path[-1,:]]
+        newPath = np.concatenate((newPath, np.reshape(path[-1,:],(1,7))))
         return newPath
+
+    def plot_paths(self,path,smooth):
+        fig = plt.figure()
+        ax = fig.add_subplot(111,projection='3d')
+        ax.scatter(self.map_x,self.map_y,self.map_heights)
+        path_x = path[:,0]
+        path_y = path[:,1]
+        path_z = -path[:,2]
+        smooth_x = smooth[:,0]
+        smooth_y = smooth[:,1]
+        smooth_z = -smooth[:,2]
+        ax.plot(path_x,path_y,path_z,'--')
+        ax.plot(smooth_x,smooth_y,smooth_z)
+        plt.show()
