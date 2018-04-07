@@ -107,7 +107,6 @@ class pathManager(pathFollow):
                 self.path_state = 1
 
             # Find dubins parameters
-            print P[self.i-1],P[self.i],R
             L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
             self.plot_straight(z1,z2)
             if self.path_state == 1:
@@ -177,7 +176,6 @@ class pathManager(pathFollow):
         pe = cur[0:3]
         chis = prev[3]
         chie = cur[3]
-        print ps,pe
         if np.linalg.norm(np.subtract(ps,pe)) < 3 * R:
             print 'Radius problem'
             return None
@@ -191,7 +189,7 @@ class pathManager(pathFollow):
         cre = np.add(pe,np.matmul(np.multiply(R,Rzpi),[np.cos(chie),np.sin(chie),0]))
         cle = np.add(pe,np.matmul(np.multiply(R,Rzpi_),[np.cos(chie),np.sin(chie),0]))
 
-        # Path 1
+        # Path 1 RSR
         vartheta = self.wrap(self.dot_angle(crs,cre))
         ang1 = self.wrap(vartheta - np.pi/2)
         ang2 = self.wrap(chis - np.pi/2)
@@ -199,9 +197,9 @@ class pathManager(pathFollow):
         ang4 = self.wrap(chie - np.pi/2)
         ang5 = self.wrap(vartheta - np.pi/2)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
-        L1 = np.linalg.norm(np.subtract(crs,cre)) + R * self.wrap(ang3 + ang6)
+        L1 = np.linalg.norm(np.subtract(crs,cre)) + R * self.wrap(ang3) + R * self.wrap(ang6)
 
-        # Path 2
+        # Path 2 RSL
         vartheta = self.wrap(self.dot_angle(crs,cle))
         l = np.linalg.norm(np.subtract(cle,crs))
         vartheta2 = self.wrap(vartheta - np.pi/2 + np.arcsin(2 * R / l))
@@ -211,9 +209,9 @@ class pathManager(pathFollow):
         ang4 = self.wrap(vartheta2 + np.pi)
         ang5 = self.wrap(chie + np.pi/2)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
-        L2 = np.sqrt(l**2 - 4 * R**2) + R * self.wrap(ang3 + ang6)
+        L2 = np.sqrt(l**2 - 4 * R**2) + R * self.wrap(ang3) + R * self.wrap(ang6)
 
-        # Path 3
+        # Path 3 LSR
         vartheta = self.wrap(self.dot_angle(cls,cre))
         l = np.linalg.norm(np.subtract(cre,cls))
         vartheta2 = self.wrap(np.arccos(2 * R / l))
@@ -223,9 +221,9 @@ class pathManager(pathFollow):
         ang4 = self.wrap(chie - np.pi/2)
         ang5 = self.wrap(vartheta + vartheta2 - np.pi)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
-        L3 = np.sqrt(l**2 - 4 * R**2) + R * self.wrap(ang3 + ang6)
+        L3 = np.sqrt(l**2 - 4 * R**2) + R * self.wrap(ang3) + R * self.wrap(ang6)
 
-        # Path 4
+        # Path 4 LSL
         vartheta = self.wrap(self.dot_angle(cls,cle))
         ang1 = self.wrap(chis + np.pi/2)
         ang2 = self.wrap(vartheta + np.pi/2)
@@ -233,7 +231,8 @@ class pathManager(pathFollow):
         ang4 = self.wrap(vartheta + np.pi/2)
         ang5 = self.wrap(chie + np.pi/2)
         ang6 = self.wrap(2 * np.pi + ang4 - ang5)
-        L4 = np.linalg.norm(np.subtract(cls,cle)) + R * self.wrap(ang3 + ang6)
+        
+        L4 = np.linalg.norm(np.subtract(cls,cle)) + R * self.wrap(ang3) + R * self.wrap(ang6)
 
         L = np.min([L1,L2,L3,L4])
         arg = np.argmin([L1,L2,L3,L4])
@@ -306,7 +305,10 @@ class pathManager(pathFollow):
         return (ang) % (2 * np.pi)
 
     def dot_angle(self,v1,v2):
-        return np.arccos(np.clip(np.dot(v1,v2)/np.linalg.norm(v1)/np.linalg.norm(v2),-1.0,1.0))
+#         xaxis = [1,0,0]
+#         v = np.subtract(v2,v1)
+#         return np.arccos(np.clip(np.dot(xaxis,v)/np.linalg.norm(xaxis)/np.linalg.norm(v),-1.0,1.0))
+        return np.arctan2(v2[1] - v1[1],v2[0] - v1[0])
         
     def plot_straight(self,start,end):
         data = [[start[0],end[0]],
@@ -334,6 +336,10 @@ class pathManager(pathFollow):
                   np.add(ce[1],np.multiply(rho,np.sin(theta)))]
         self.cre_curve.setData(circle[1],circle[0])
 
+    def plot_arrow(self,chi,p):
+        self.arrow_plane.setPos(p[1],p[0])
+        self.arrow_plane.setRotation(chi * 180.0/np.pi)
+
     def waypoint_plot(self,w,p):
         if self.t_sim < 2 * self.dt:
             # Setup Window
@@ -341,9 +347,14 @@ class pathManager(pathFollow):
             self.path_win.setWindowTitle('Path')
             self.path_win.setInteractive(True)
 
+            # Arrow
+            self.arrow_plane = pg.ArrowItem(angle = 90.0)
+            self.arrow_plane.setPos(p[0],p[1])
+
             # Plots
             self.path_p = self.path_win.addPlot()
             self.path_p.addLegend()
+            self.path_p.addItem(self.arrow_plane)
 
             # Data
             self.achieved_path = [[],[]]

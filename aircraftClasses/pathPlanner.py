@@ -1,5 +1,8 @@
 import time
 from pathManager import *
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
 
 class pathPlanner(pathManager):
     def __init__(self,va0 = 30.0,model=1):
@@ -18,14 +21,15 @@ class pathPlanner(pathManager):
         self.map_heights = np.abs(np.random.randn(s[0],s[1])) * 100
 
     def planRRT(self,ps,pe,chi):
-        segmentLength = 100
+        segmentLength = 3 * self.Rmin
         # N E D chi cost parent idx flag_connect_to_goal
         start_node = np.reshape([ps[0], ps[1], pe[2], chi, 0, 0, 0],(1,7))
         end_node = np.reshape([pe[0], pe[1], pe[2], chi, 0, 0, 0],(1,7))
 
         tree = start_node
         if np.linalg.norm(np.subtract(start_node[0:3],end_node[0:3])) < segmentLength and self.collision(start_node,end_node) == 0:
-            path = [start_node, end_node];
+            print 'Only One length'
+            path = [start_node, end_node]
         else:
             numPaths = 0
             while numPaths < 1:
@@ -38,7 +42,14 @@ class pathPlanner(pathManager):
         P = path_out[:,0:4]
         ps = [ps[0],ps[1],ps[2],chi]
         P = np.concatenate((np.reshape(ps,(1,4)),P))
+        for i in xrange(len(P) - 1):
+            P[i+1,3] = self.getAngle(P[i,0:3],P[i+1,0:3],P[i+1,3])
         return P.tolist()
+
+    def getAngle(self,ps,pe,chi_next):
+        x = pe[0] - ps[0]
+        y = pe[1] - ps[1]
+        return np.arctan2(y,x) + (chi_next - np.arctan2(y,x))/2
 
     def generateRandomNode(self,pd,chi):
         pn = self.map_width * abs(np.random.randn(1))
@@ -129,13 +140,14 @@ class pathPlanner(pathManager):
         return path
 
     def smoothPath(self,path):
-        newPath = np.reshape(path[0,:],(1,7))
+        l = np.size(path,1)
+        newPath = np.reshape(path[0,:],(1,l))
         ptr = 2
         while ptr <= np.size(path,0) - 1:
             if self.collision(deepcopy(newPath[-1,:]), path[ptr,:]) != 0:
-                newPath = np.concatenate((newPath,np.reshape(path[ptr-1,:],(1,7))))
+                newPath = np.concatenate((newPath,np.reshape(path[ptr-1,:],(1,l))))
             ptr += 1
-        newPath = np.concatenate((newPath, np.reshape(path[-1,:],(1,7))))
+        newPath = np.concatenate((newPath, np.reshape(path[-1,:],(1,l))))
         return newPath
 
     def plot_paths(self,path,smooth):
@@ -151,3 +163,142 @@ class pathPlanner(pathManager):
         ax.plot(path_x,path_y,path_z,'--')
         ax.plot(smooth_x,smooth_y,smooth_z)
         plt.show()
+
+    def planCover(self,p,ps,chi):
+        pd = p[2]
+
+        start_node = [p[0],p[1],pd,chi,0,0]
+
+        returnMapSize = 30
+        return_map = 50 * np.ones((returnMapSize,returnMapSize)) + np.random.randn(returnMapSize,returnMapSize)
+#         self.plotReturnMap(return_map,returnMapSize)
+
+        search_cycles = 200
+        L = 50
+        vartheta = np.pi/6
+        depth = 5
+
+        path = start_node
+        path = np.reshape(path,(1,len(path)))
+        for i in xrange(search_cycles):
+            tree = self.extendTreeCover(path[-1,:],L,vartheta,depth,return_map,pd)
+            next_path = self.findMaxReturnPath(tree)
+            path = np.concatenate((path,np.reshape(next_path[0,:],(1,6))))
+            return_map = self.updateReturnMap(np.reshape(next_path[0,:],(1,6)),return_map)
+#             self.plotReturnMap(return_map)
+        self.plotReturnMap(return_map,returnMapSize)
+
+        path_ = path
+        path = np.reshape(path[0,:],(1,6))
+        for i in xrange(np.size(path_,0)-1):
+            if path_[i+1,3] != path_[i,3]:
+                path = np.concatenate((path,np.reshape(path_[i+1,:],(1,6))))
+
+        path = self.smoothPath(path)
+        P = path[:,0:4]
+        ps = [ps[0],ps[1],ps[2],chi]
+        for i in xrange(len(P) - 1):
+            P[i+1,3] = self.getAngle(P[i,0:3],P[i+1,0:3],P[i+1,3])
+        return P.tolist()
+
+    def extendTreeCover(self,start_node,L,vartheta,depth,return_map,pd):
+        tree_ = np.reshape(np.append(start_node,0),(1,7))
+        for d in xrange(depth):
+            newnodes = []
+            for j in xrange(np.size(tree_,0)):
+                if tree_[j,6] != 1:
+                    for i in xrange(3):
+                        if i == 0:
+                            theta = tree_[j,3] - vartheta
+                        elif i == 1:
+                            theta = tree_[j,3]
+                        elif i == 2:
+                            theta = tree_[j,3] + vartheta
+                        newnode_ = [tree_[j,0] + L * np.cos(theta),
+                                    tree_[j,1] + L * np.sin(theta),
+                                    tree_[j,2],
+                                    theta,
+                                    0,
+                                    j,
+                                    0]
+                        if self.collisionCover(tree_[j,:], newnode_) == 0:
+                            newnode_[4] = tree_[j,4] + self.findReturn(newnode_[0],newnode_[1],return_map)
+                            newnodes = np.concatenate((newnodes,newnode_))
+                    tree_[j,6] = 1
+            tree_ = np.concatenate((tree_,np.reshape(newnodes,(-1,7))))
+        tree = tree_[:,:6]
+        return tree
+
+    def findMaxReturnPath(self,tree):
+        tmp = np.max(tree[:,4])
+        idx = np.argmax(tree[:,4])
+
+        path = np.reshape(tree[idx,:],(1,6))
+        parent_node = tree[idx,5]
+        while parent_node > 1:
+            path = np.concatenate((np.reshape(tree[int(parent_node),:],(1,6)),path))
+            parent_node = tree[int(parent_node),5]
+        return path
+
+    def collisionCover(self,start_node,end_node):
+        collision_flag = 0
+        sigma = np.linspace(0,1,11)
+        for i in xrange(11):
+            X = (1 - sigma[i]) * start_node[0] + sigma[i] * end_node[0]
+            Y = (1 - sigma[i]) * start_node[1] + sigma[i] * end_node[1]
+            Z = (1 - sigma[i]) * start_node[2] + sigma[i] * end_node[2]
+            if Z >= self.downAtNE(X,Y):
+                collision_flag = 1
+                
+            if X > self.map_width or X < 0 or Y > self.map_width or Y < 0:
+                collision_flag = 1
+
+        return collision_flag
+
+    def findReturn(self,pn,pe,return_map):
+        pnsize = np.shape(return_map)
+        pn_max = pnsize[0]-1
+        pe_max = pnsize[1]-1
+
+        fn = pn_max * pn / self.map_width
+        fn = min(pn_max,int(round(fn)))
+        fn = max(1,fn)
+        fe = pe_max * pe / self.map_width
+        fe = min(pe_max,int(round(fe)))
+        fe = max(1,fe)
+        return return_map[fn,fe]
+        
+
+    def updateReturnMap(self,path,return_map):
+        new_return_map = return_map
+        for i in xrange(np.size(path,0)):
+            pn = path[i,0]
+            pe = path[i,1]
+            pnsize = np.shape(return_map)
+            pn_max = pnsize[0]-1
+            pe_max = pnsize[1]-1
+            fn = pn_max * pn / self.map_width
+            fn = min(pn_max, int(round(fn)))
+            fn = max(1,fn)
+            fe = pe_max * pe / self.map_width
+            fe = min(pe_max, int(round(fe)))
+            fe = max(1,fe)
+            
+            new_return_map[fn,fe] = return_map[fn,fe] - 50
+
+        return new_return_map
+
+
+    def plotReturnMap(self,return_map,s):
+        self.fig_surface = plt.figure()
+        self.ax_surface = self.fig_surface.add_subplot(111,projection='3d')  
+        l = np.size(return_map,0)
+        X = np.arange(0,l,l/s)
+        Y = np.arange(0,l,l/s)
+        X,Y = np.meshgrid(X,Y)
+        Z = return_map
+        self.ax_surface.plot_surface(X,Y,Z,cmap = cm.coolwarm)
+        plt.show()
+        
+
+        
