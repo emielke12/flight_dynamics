@@ -33,6 +33,7 @@ class bottleDrop(kalmanFilter):
         #      self.Va_hat * np.sin(self.psi_hat),
         #      0]
         V = v_des # Desired Velocity to use in drop equations (i.e. how do you want to approach)
+        self.approach_angle = np.arctan2(v_des[1],v_des[0])
 
         # Initial Position
         Z = [0,0,0]
@@ -63,7 +64,8 @@ class bottleDrop(kalmanFilter):
 
         # Update drop location
 #         pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), -np.matmul(Rpsi,Z)[0:2])
-        self.pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), -Z[0:2]) # Ground Frame?
+        self.pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), np.multiply(-1,Z[0:2])) # Ground Frame?
+        self.pdrop = [self.pdrop[0],self.pdrop[1],h]
         # print 'Drop Location',self.pdrop
 
     def release_triggered(self,x,wind):

@@ -1,3 +1,4 @@
+from aircraftClasses.pathPlanner import *
 from aircraftClasses.kalmanFilter import *
 from aircraftClasses.bottleDrop import *
 import sys
@@ -8,47 +9,44 @@ def ctrl_c(plane,x0,wind):
     alpha,beta,va = [],[],[]
     cmd = [[],[],[]]
     counter = 1
-    plane.switch = 'air'
+    planned = False
     
     try:
         while True:
             # Calculate Wind Values
             # wind[3],wind[4],wind[5] = plane.calc_dryden_gust(plane.dt)
 
-            # Just keep from sideslipping
-            # plane.sideslip_hold(x0,plane.dt)
-            # plane.sideslip_hold(plane.x_hat,plane.dt)
-
             ######## Bottle Drop Stuff #######
-            plane.wind_estimate(plane.x_hat)
+            bottle.wind_estimate(plane.x_hat)
             ######## Bottle Drop Stuff #######
 
+            p = [plane.pn_hat,plane.pe_hat,plane.h_hat]
 
             # Maneuver to Run
-            if plane.t_sim >= 40.0:
-                plane.altitude_hold(plane.x_hat,105.0,plane.dt)
-                plane.airspeed_throttle(plane.x_hat,30.0,plane.dt)
-                plane.course_hold(plane.x_hat, 25.0 * np.pi / 180.0, plane.dt,plane.chi_hat)
-                cmd[0].append(105.0)
-                cmd[1].append(30.0)
-                cmd[2].append(25 * np.pi / 180.0)
-
+            if plane.t_sim < 1.0:
+                r = [0, 0, 100]
+                q = [1, 0, 0]
+                c = [0, 0, 100]
+                rho = 1000
+                path_type = 'straight'
+                W = [[0,0,100]]
+                plan.waypoint_plot(W,p)
             else:
-                plane.altitude_hold(plane.x_hat,100.0,plane.dt)
-                plane.airspeed_throttle(plane.x_hat,30.0,plane.dt)
-                plane.course_hold(plane.x_hat, 0.0 * np.pi / 180.0, plane.dt,plane.chi_hat)
-                cmd[0].append(100.0)
-                cmd[1].append(30.0)
-                cmd[2].append(0 * np.pi / 180.0)
+                R = plan.Rmin
+                bottle.calc_drop_location(-p[2],[347,275],[30.0, 0, 0,])
+                if planned == False:
+                    print 'planning'
+                    P = plan.planRRT([p[0],p[1],-p[2]], bottle.pdrop, plane.chi_hat)
+                    print 'done planning'
+                    planned = True
+                    P[1][-1] = bottle.approach_angle
+                    W = np.transpose(P)[0:3,:]
+                    print P
 
                 ######## Bottle Drop Stuff #######
-                plane.calc_drop_location(-plane.x_hat[2],[100,0],[30.0,0,0])
+                if bottle.in_drop() == True:
+                    bottle.release_triggered(x0,wind)
                 ######## Bottle Drop Stuff #######
-                
-            ######## Bottle Drop Stuff #######
-            if plane.in_drop() == True:
-                plane.release_triggered(x0,wind)
-            ######## Bottle Drop Stuff #######
             
             # Calculate Force, Airspeed, alpha, beta
             fx,fy,fz,l,m,n,va_,alpha_,beta_,wn,we,wd = plane.force_calc(x0,plane.deltas,wind)
@@ -72,14 +70,6 @@ def ctrl_c(plane,x0,wind):
                 if j == 8:
                     sols[j][-1] = plane.chi
 
-            # # Plot
-            # plane.draw_update([sol[-1][6],sol[-1][7],sol[-1][8]],[sol[-1][0],sol[-1][1],sol[-1][2]])
-
-            # plot things
-            alpha.append(alpha_)
-            beta.append(beta_)
-            va.append(va_)
-            
             # Update initial state for ODE
             x0 = sol[-1,:]
 
@@ -87,10 +77,12 @@ def ctrl_c(plane,x0,wind):
             plane.t_sim += plane.dt
             counter += 1
 
+            plan.waypoint_plot(W,p)
+
             if plane.t_sim >= 40.0:
-                plt.close('all')
-                plane.plot_all_post(np.transpose(sols),alpha,beta,va,cmd)
-                plt.show()
+#                 plt.close('all')
+#                 plane.plot_all_post(np.transpose(sols),alpha,beta,va,cmd)
+#                 plt.show()
                 break
             
     except KeyboardInterrupt:
@@ -99,21 +91,9 @@ def ctrl_c(plane,x0,wind):
 
 if __name__ == "__main__":    
     # Initial Conditions
-    pn0 = 0
-    pe0 = 0
-    pd0 = -100.0#-300.0
-    u0 = 30.0
-    v0 = 0
-    w0 = 0.0
-    phi0 = 0
-    th0 = 0
-    psi0 = 0
-    p0 = 0.0
-    q0 = 0
-    r0 = 0
-
-    # Initial State Vector
-    x0 = [pn0,pe0,pd0,u0,v0,w0,phi0,th0,psi0,p0,q0,r0]
+    va0 = 30.0
+    x0 = [0,0,-100,va0,0,0,0,0,0,0,0,0]
+    model = 1
     
     # Initial Wind Vector
     wind = [3.0,0.0,0.0,0.0,0.0,0.0]
@@ -122,7 +102,11 @@ if __name__ == "__main__":
     trim = [x0[3],0.0 * np.pi/180.0,5e60] # Va, gamma, R
 
     # Instantiate Class
-    plane = bottleDrop(x0,trim)
+    plan = pathPlanner(va0,model)
+    plan.x[4] = -x0[2]
+    plane = kalmanFilter(x0,trim)
+    plt.close('all')
+    bottle = bottleDrop(x0,trim)
 
     #------------------------ RUNS UNTIL CTRL-C---------------------------------------#
     ctrl_c(plane,x0,wind)

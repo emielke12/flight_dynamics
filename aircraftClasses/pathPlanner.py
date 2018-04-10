@@ -29,21 +29,25 @@ class pathPlanner(pathManager):
         tree = start_node
         if np.linalg.norm(np.subtract(start_node[0:3],end_node[0:3])) < segmentLength and self.collision(start_node,end_node) == 0:
             print 'Only One length'
-            path = [start_node, end_node]
+            tree = [start_node, end_node]
+            start_node = np.reshape(start_node,(7,))
+            end_node = np.reshape(end_node,(7,))
+            P = np.array([[start_node[0],start_node[1],start_node[2],chi],[end_node[0],end_node[1],end_node[2],0]])
         else:
             numPaths = 0
             while numPaths < 1:
                 tree, flag = self.extendTree(tree,end_node,segmentLength,pe[2],chi)
                 numPaths = numPaths + flag
 
-        path = self.findMinimumPath(tree,end_node[0])
-        path_out = self.smoothPath(path)
-        self.plot_paths(path,path_out)
-        P = path_out[:,0:4]
-        ps = [ps[0],ps[1],ps[2],chi]
-        P = np.concatenate((np.reshape(ps,(1,4)),P))
-        for i in xrange(len(P) - 1):
-            P[i+1,3] = self.getAngle(P[i,0:3],P[i+1,0:3],P[i+1,3])
+            path = self.findMinimumPath(tree,end_node[0])
+            path_out = self.smoothPath(path)
+            self.plot_paths(path,path_out)
+            P = path_out[:,0:4]
+            ps = [ps[0],ps[1],ps[2],chi]
+            P = np.concatenate((np.reshape(ps,(1,4)),P))
+            for i in xrange(len(P) - 1):
+                P[i+1,3] = self.getAngle(P[i,0:3],P[i+1,0:3],P[i+1,3])
+
         return P.tolist()
 
     def getAngle(self,ps,pe,chi_next):
@@ -59,6 +63,8 @@ class pathPlanner(pathManager):
 
     def collision(self,start_node,end_node):
         collision_flag = 0
+        start_node = np.reshape(start_node,(7,))
+        end_node = np.reshape(end_node,(7,))
         X,Y,Z = self.pointsAlongPath(start_node,end_node,0.1)
         for i in xrange(len(X)):
             if Z[i] >= self.downAtNE(X[i],Y[i]):

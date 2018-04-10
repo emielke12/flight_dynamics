@@ -35,8 +35,8 @@ def ctrl_c(plane,plane2,x0,wind,model):
 
             elif plane.t_sim >= 0.02 and plane.t_sim < 0.03:
                 R = plane.Rmin
-#                 P = plane.planRRT([p_9[0], p_9[1], -p_9[2]],[640,470,-100],plane.x[2])
-                P = plane.planCover([p_9[0], p_9[1], -p_9[2]],p_9,plane.x[2])
+                P = plane.planRRT([p_9[0], p_9[1], -p_9[2]],[640,470,-100],plane.x[2])
+#                 P = plane.planCover([p_9[0], p_9[1], -p_9[2]],p_9,plane.x[2])
                 W = np.transpose(np.transpose(P)[0:3,:])
                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
                 plane.plot_arrow(plane.x[2],p_9)
