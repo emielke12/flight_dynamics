@@ -379,7 +379,6 @@ class pathManager(pathFollow):
                 self.waypoint_path[1].append(w[i][1])
 
         else:
-            print 'plotting?'
             self.achieved_path[0].append(p[0])
             self.achieved_path[1].append(p[1])
             self.achieved_path_curve.setData(self.achieved_path[1],self.achieved_path[0])

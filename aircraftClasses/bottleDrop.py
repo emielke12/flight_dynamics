@@ -94,7 +94,8 @@ class bottleDrop(kalmanFilter):
     
         # Actual hit location
         self.hit = [self.true_bottle_path[0][-1],self.true_bottle_path[1][-1]]
-        print '\nAchieved Hit at: ',self.hit,'\n'
+        error = np.sqrt((self.pdrop[0] - self.hit[0])**2 + (self.pdrop[1] - self.hit[1])**2)
+        print '\nAchieved:\t',self.hit,'\tError:\t',error,'\n'
 
     def bottle_eom(self,x,t):
         # Drag Forces
@@ -110,10 +111,14 @@ class bottleDrop(kalmanFilter):
 
         return xdot
 
-    def in_drop(self):
-        d = np.sqrt((self.x_hat[0] - self.pdrop[0])**2 + (self.x_hat[1] - self.pdrop[1])**2)
-        if d < 5.0:
+    def in_drop(self,p):
+        d = np.sqrt((p[0] - self.pdrop[0])**2 + (p[1] - self.pdrop[1])**2)
+        print d
+        if d < 10.0:
             return True
         else:
             return False
         
+
+    def plane_path_plot(self,w,p):
+        pass

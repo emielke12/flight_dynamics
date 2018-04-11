@@ -147,25 +147,37 @@ class pathPlanner(pathManager):
 
     def smoothPath(self,path):
         l = np.size(path,1)
-        newPath = np.reshape(path[0,:],(1,l))
+#         newPath = np.reshape(path[0,:],(1,l))
+        newPath = np.reshape(path[0][:],(1,l))
         ptr = 2
         while ptr <= np.size(path,0) - 1:
-            if self.collision(deepcopy(newPath[-1,:]), path[ptr,:]) != 0:
-                newPath = np.concatenate((newPath,np.reshape(path[ptr-1,:],(1,l))))
+            if self.collision(deepcopy(newPath[-1][:]), path[ptr][:]) != 0:
+                newPath = np.concatenate((newPath,np.reshape(path[ptr-1][:],(1,l))))
             ptr += 1
-        newPath = np.concatenate((newPath, np.reshape(path[-1,:],(1,l))))
+        newPath = np.concatenate((newPath, np.reshape(path[-1][:],(1,l))))
         return newPath
 
     def plot_paths(self,path,smooth):
         fig = plt.figure()
         ax = fig.add_subplot(111,projection='3d')
         ax.scatter(self.map_x,self.map_y,self.map_heights)
-        path_x = path[:,0]
-        path_y = path[:,1]
-        path_z = -path[:,2]
-        smooth_x = smooth[:,0]
-        smooth_y = smooth[:,1]
-        smooth_z = -smooth[:,2]
+        redo_path = np.transpose(path)
+        redo_smooth =  np.transpose(smooth)
+
+#         path_x = path[:][0]
+#         path_y = path[:][1]
+#         path_z = -path[:][2]
+#         smooth_x = smooth[:][0]
+#         smooth_y = smooth[:][1]
+#         smooth_z = -smooth[:][2]
+
+        path_x = redo_path[0][:]
+        path_y = redo_path[1][:]
+        path_z = -redo_path[2][:]
+        smooth_x = redo_smooth[0][:]
+        smooth_y = redo_smooth[1][:]
+        smooth_z = -redo_smooth[2][:]
+
         ax.plot(path_x,path_y,path_z,'--')
         ax.plot(smooth_x,smooth_y,smooth_z)
         plt.show()
