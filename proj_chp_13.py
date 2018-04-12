@@ -33,7 +33,7 @@ def ctrl_c(plane,plane2,x0,wind,model):
             W = [[0,0,100]]
 
             # Target Tracking
-            p_obj = [5,5,500]
+            p_obj = [10,0,0]
             p_mav = x0[0:3]
             phi,th,psi = x0[6:9]
             plane.geolocation(p_obj,p_mav,phi,th,psi)
@@ -90,6 +90,7 @@ def ctrl_c(plane,plane2,x0,wind,model):
             x0 = sol[-1,:]
 
     except KeyboardInterrupt:
+        print '\nGeolocation Error:\t',plane.geo_error
         sys.exit()
 
 if __name__ == "__main__":    
