@@ -6,7 +6,7 @@ class pathManager(pathFollow):
 
         self.W = 0.0 # Waypoint path
         self.P = 0.0 # Dubins Configuration Path
-        self.Rmin = 50.0 # Minimum turn radius
+        self.Rmin = 150.0 # Minimum turn radius
 
     def algorithm_5(self,W,p):
         '''

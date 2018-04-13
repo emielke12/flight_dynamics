@@ -21,9 +21,9 @@ class Sensors(autoPilot):
         self.sigma_chi = self.sigma_V / np.linalg.norm([x0[3],x0[4],x0[5]])
 
         # GPS Specific Stuff
-        self.sigma_n = 0.21 # meters
-        self.sigma_e = 0.21 # meters
-        self.sigma_d = 0.40 # meters
+        self.sigma_n = 0.021 # meters
+        self.sigma_e = 0.021 # meters
+        self.sigma_d = 0.040 # meters
         self.k_gps = 1.0/1100.0 # Hz
         self.eta_n = 0.0 # m
         self.eta_e = 0.0 # m

@@ -16,6 +16,7 @@ def ctrl_c(plane,plane2,bottle,x0,wind,model):
     # Use chapter 9 or kalman filter
     kalman = True
     path_type = 'straight'
+    switch_time = 2.0
 
     try:
         while True:
@@ -25,10 +26,10 @@ def ctrl_c(plane,plane2,bottle,x0,wind,model):
             cmd[4] = 30.0 # va
 
             # Estimate wind
-            bottle.wind_estimate(plane2.x_hat)
+            bottle.wind_estimate(plane2.x_hat,plane2.chi_hat,plane2.psi_hat,wind)
             
             # Maneuver to Run
-            if plane.t_sim < 2.0:
+            if plane.t_sim < switch_time:
                 r = [0, 0, 100]
                 q = [1, 0, 0]
                 c = [0,0,100]
@@ -36,21 +37,25 @@ def ctrl_c(plane,plane2,bottle,x0,wind,model):
                 path_type = 'straight'
                 W = [[0,0,100]]
 
-            elif plane.t_sim >= 2.0 and plane.t_sim < 2.01:
+            elif plane.t_sim >= switch_time and plane.t_sim < switch_time + 0.01:
                 R = plane.Rmin
+                target = [600,400]
 #                 bottle.calc_drop_location(-p_9[2],[670,170],[30,0,0])
-                bottle.calc_drop_location(-p_est[2],[670,170],[30,0,0])
+                # bottle.calc_drop_location(-p_est[2],target,[30,0,0],False)
+                bottle.calc_drop_location(-p_est[2],target,[30,0,0],True)
+                print bottle.pdrop
                 bottle.pdrop[2] = -100.0
 #                 P = plane.planRRT([p_9[0], p_9[1], -p_9[2]],bottle.pdrop,plane.x[2])
-                P = plane.planRRT([p_est[0], p_est[1], -p_est[2]],bottle.pdrop,plane2.chi_hat)
-                P[1][-1] = bottle.approach_angle
+                # P = plane.planRRT([p_est[0], p_est[1], -p_est[2]],bottle.pdrop,plane2.chi_hat)
+                # P[1][-1] = bottle.approach_angle
+                P = bottle.plan_path([p_est[0], p_est[1], -p_est[2]],bottle.pdrop,plane2.chi_hat)
                 W = np.transpose(np.transpose(P)[0:3,:])
 #                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
 #                 plane.plot_arrow(plane.x[2],p_9)
                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_est,R)
                 plane.plot_arrow(plane2.chi_hat,p_est)
 
-            elif plane.t_sim >= 2.01:
+            elif plane.t_sim >= switch_time + 0.01:
                 R = plane.Rmin
 #                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
 #                 plane.plot_arrow(plane.x[2],p_9)
@@ -58,7 +63,7 @@ def ctrl_c(plane,plane2,bottle,x0,wind,model):
                 plane.plot_arrow(plane2.chi_hat,p_est)
 
                 if bottle.in_drop(p_est) == True:
-                    bottle.release_triggered(x0,wind)
+                    bottle.release_triggered(x0,wind,target)
 
             # Determine Commands for autopilot
             if kalman == True:
@@ -83,6 +88,7 @@ def ctrl_c(plane,plane2,bottle,x0,wind,model):
             plane2.altitude_hold(plane2.x_hat,cmd[3],plane2.dt)
             plane2.airspeed_throttle(plane2.x_hat,cmd[4],plane2.dt)
             plane2.course_hold(plane2.x_hat,cmd[1],plane2.dt,plane2.chi_hat)
+            # print plane2.chi_hat - cmd2[2][-1]
 
             # Run ODE
             plane.simulate_states(wind[0:3],cmd,model)
@@ -120,7 +126,7 @@ if __name__ == "__main__":
     
     # Initial Wind Vector
     # wind = [3,-3,0,0,0,0]
-    wind = [0,0,0,0,0,0]
+    wind = [0,1,0,0,0,0]
 
     # Trim
     trim = [x0[3],0,5e60]

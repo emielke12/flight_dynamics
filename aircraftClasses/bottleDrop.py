@@ -14,26 +14,36 @@ class bottleDrop(kalmanFilter):
         self.S_object = np.pi * self.radius ** 2
         self.Cd_object = 0.5
 
-    def wind_estimate(self,x0):
+    def wind_estimate(self,x0,chi,psi,wind):
         # Estimate wind from current state or state estimate (if using kalman filter)
-        wn = self.Vg_hat * np.cos(self.chi_hat) - self.Va_hat * np.cos(self.psi_hat)
-        we = self.Vg_hat * np.sin(self.chi_hat) - self.Va_hat * np.sin(self.psi_hat)
+        wn = self.Vg_hat * np.cos(chi) - self.Va_hat * np.cos(psi)
+        we = self.Vg_hat * np.sin(chi) - self.Va_hat * np.sin(psi)
 
-        if len(self.wind_array) < 10:
+        if len(self.wind_array) < 50:
             self.wind_array.append([wn,we])
         else:
             self.wind_array = np.roll(self.wind_array,-1,axis=0)
             self.wind_array[-1] = [wn,we]
         self.wind_avg = np.average(self.wind_array,axis=0)
+        self.wind_psi = np.arctan2(self.wind_avg[1],self.wind_avg[0]) - np.pi/2
+        # print self.wind_psi
+        self.wind_avg = np.add(wind[0:2],np.random.randn(2) * 0.1)
         self.wind_psi = np.arctan2(self.wind_avg[1],self.wind_avg[0])
+        
 
-    def calc_drop_location(self,h,ptarget,v_des):
+    def calc_drop_location(self,h,ptarget,v_des,into_wind = False):
         # Calculate Directional Velocity
         # V = [self.Va_hat * np.cos(self.psi_hat),
         #      self.Va_hat * np.sin(self.psi_hat),
         #      0]
-        V = v_des # Desired Velocity to use in drop equations (i.e. how do you want to approach)
-        self.approach_angle = np.arctan2(v_des[1],v_des[0])
+        if into_wind == True:
+            magV = np.linalg.norm(v_des)
+            V = [magV * np.cos(self.wind_psi), magV * np.sin(self.wind_psi), 0]
+            self.approach_angle = deepcopy(self.wind_psi)
+
+        else:
+            V = v_des # Desired Velocity to use in drop equations (i.e. how do you want to approach)
+            self.approach_angle = np.arctan2(v_des[1],v_des[0])
 
         # Initial Position
         Z = [0,0,0]
@@ -42,6 +52,7 @@ class bottleDrop(kalmanFilter):
         Tdrop = 0.0
 
         # Calculate Drop Position and Time
+        h = -h
         while Z[2] < h: 
             # Calculate dynamic forces on the object
             q = self.rho * self.S_object * self.Cd_object / (2 * self.mass_object)
@@ -57,18 +68,13 @@ class bottleDrop(kalmanFilter):
             # Update Time vector
             Tdrop += self.dt
             
-#         # Wind direction
-#         Rpsi = [[np.cos(self.wind_psi), -np.sin(self.wind_psi), 0],
-#                 [np.sin(self.wind_psi), np.cos(self.wind_psi), 0],
-#                 [0, 0, 1]]
 
-        # Update drop location
-#         pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), -np.matmul(Rpsi,Z)[0:2])
+
         self.pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), np.multiply(-1,Z[0:2])) # Ground Frame?
         self.pdrop = [self.pdrop[0],self.pdrop[1],h]
         # print 'Drop Location',self.pdrop
 
-    def release_triggered(self,x,wind):
+    def release_triggered(self,x,wind,target):
         # Determine True Location
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
         wn,we,wd,_,_,_ = wind
@@ -81,7 +87,7 @@ class bottleDrop(kalmanFilter):
                  w - wd]
         time = 0.0
         while state[2] > 0: 
-            sol = odeint(self.bottle_eom,state,[0.0, self.dt])
+            sol = odeint(self.bottle_eom,state,[0.0, self.dt],mxstep=5000000)
             time += self.dt
             state = [sol[-1][0] + self.dt * wn,
                      sol[-1][1] + self.dt * we,
@@ -94,7 +100,7 @@ class bottleDrop(kalmanFilter):
     
         # Actual hit location
         self.hit = [self.true_bottle_path[0][-1],self.true_bottle_path[1][-1]]
-        error = np.sqrt((self.pdrop[0] - self.hit[0])**2 + (self.pdrop[1] - self.hit[1])**2)
+        error = np.sqrt((target[0] - self.hit[0])**2 + (target[1] - self.hit[1])**2)
         print '\nAchieved:\t',self.hit,'\tError:\t',error,'\n'
 
     def bottle_eom(self,x,t):
@@ -111,10 +117,15 @@ class bottleDrop(kalmanFilter):
 
         return xdot
 
+    def plan_path(self,p,t,chi):
+        extend = [t[0] + 1000 * np.cos(self.approach_angle), t[1] + 1000 * np.sin(self.approach_angle),t[2],0]
+        P = [[p[0],p[1],p[2],chi],[t[0],t[1],t[2],self.approach_angle],extend]
+        return P
+
     def in_drop(self,p):
         d = np.sqrt((p[0] - self.pdrop[0])**2 + (p[1] - self.pdrop[1])**2)
-        print d
-        if d < 10.0:
+
+        if d < 20.0:
             return True
         else:
             return False
