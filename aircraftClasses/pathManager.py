@@ -108,7 +108,7 @@ class pathManager(pathFollow):
 
             # Find dubins parameters
             L,cs,lambs,ce,lambe,z1,q1,z2,z3,q3 = self.find_dubins_parameters(P[self.i-1],P[self.i],R)
-            self.plot_straight(z1,z2)
+            # self.plot_straight(z1,z2)
             if self.path_state == 1:
                 flag = 2
                 c = cs

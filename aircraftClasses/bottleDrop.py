@@ -27,8 +27,10 @@ class bottleDrop(kalmanFilter):
         self.wind_avg = np.average(self.wind_array,axis=0)
         self.wind_psi = np.arctan2(self.wind_avg[1],self.wind_avg[0]) - np.pi/2
         # print self.wind_psi
-        self.wind_avg = np.add(wind[0:2],np.random.randn(2) * 0.1)
-        self.wind_psi = np.arctan2(self.wind_avg[1],self.wind_avg[0])
+        # self.wind_avg = np.add(wind[0:2],np.random.randn(2) * 0.01)
+        self.wind_avg = np.array([0.0,0.0])
+        # self.wind_psi = np.arctan2(self.wind_avg[1],self.wind_avg[0])
+        self.wind_psi = np.pi/2
         
 
     def calc_drop_location(self,h,ptarget,v_des,into_wind = False):
@@ -38,8 +40,8 @@ class bottleDrop(kalmanFilter):
         #      0]
         if into_wind == True:
             magV = np.linalg.norm(v_des)
-            V = [magV * np.cos(self.wind_psi), magV * np.sin(self.wind_psi), 0]
-            self.approach_angle = deepcopy(self.wind_psi)
+            V = [magV * np.cos(self.wind_psi), -magV * np.sin(self.wind_psi), 0]
+            self.approach_angle = -deepcopy(self.wind_psi)
 
         else:
             V = v_des # Desired Velocity to use in drop equations (i.e. how do you want to approach)
@@ -53,12 +55,12 @@ class bottleDrop(kalmanFilter):
 
         # Calculate Drop Position and Time
         h = -h
-        while Z[2] < h: 
+        while Z[2] < -h: 
             # Calculate dynamic forces on the object
             q = self.rho * self.S_object * self.Cd_object / (2 * self.mass_object)
-            A = [-q * V[0]**2,
-                 -q * V[1]**2,
-                 self.g - q * V[2]**2]
+            A = [-q * V[0]**2 * np.sign(V[0]),
+                 -q * V[1]**2 * np.sign(V[1]),
+                 self.g - q * V[2]**2 * np.sign(V[2])]
 
             # Solve Difference Equations for new velocity and position
             vprev = V
@@ -67,39 +69,56 @@ class bottleDrop(kalmanFilter):
 
             # Update Time vector
             Tdrop += self.dt
+
             
-
-
         self.pdrop = np.add(np.add(ptarget, -Tdrop * self.wind_avg), np.multiply(-1,Z[0:2])) # Ground Frame?
         self.pdrop = [self.pdrop[0],self.pdrop[1],h]
-        # print 'Drop Location',self.pdrop
+
+        print 'Drop Location',self.pdrop
 
     def release_triggered(self,x,wind,target):
         # Determine True Location
         pn,pe,pd,u,v,w,phi,th,psi,p,q,r = x
+
+        R = [[np.cos(th) * np.cos(psi),np.sin(phi) * np.sin(th) * np.cos(psi) - np.cos(phi) * np.sin(psi),np.cos(phi) * np.sin(th) * np.cos(psi) + np.sin(phi) * np.sin(psi)],
+             [np.cos(th) * np.sin(psi),np.sin(phi) * np.sin(th) * np.sin(psi) + np.cos(phi) * np.cos(psi),np.cos(phi) * np.sin(th) * np.sin(psi) - np.sin(phi) * np.cos(psi)],
+             [-np.sin(th), np.sin(phi) * np.cos(th), np.cos(phi) * np.cos(th)]]
+        vel_inertial = np.matmul(R,[u,v,w])
+        u,v,w = vel_inertial
+        V = [round(u,2),round(v,2),0.0]
+        
         wn,we,wd,_,_,_ = wind
-        self.true_bottle_path = [[pn],[pe],[-pd]]
-        state = [pn,
-                 pe,
-                 -pd,
-                 u - wn,
-                 v - we,
-                 w - wd]
-        time = 0.0
-        while state[2] > 0: 
-            sol = odeint(self.bottle_eom,state,[0.0, self.dt],mxstep=5000000)
-            time += self.dt
-            state = [sol[-1][0] + self.dt * wn,
-                     sol[-1][1] + self.dt * we,
-                     sol[-1][2] + self.dt * wd,
-                     sol[-1][3],
-                     sol[-1][4],
-                     sol[-1][5]]
-            for i in xrange(3):
-                self.true_bottle_path[i].append(state[i])
-    
+        Z = [0,0,0]
+        Tdrop = 0.0
+        q = self.rho * self.S_object * self.Cd_object / (2 * self.mass_object)
+
+        p_hit = [pn,pe,-pd]
+        while Z[2] < pd: 
+            # Calculate dynamic forces on the object
+            A = [-q * V[0]**2 * np.sign(V[0]),
+                 -q * V[1]**2 * np.sign(V[1]),
+                 self.g - q * V[2]**2 * np.sign(V[2])]
+
+
+            # Solve Difference Equations for new velocity and position
+            vprev = deepcopy(V)
+            V = np.add(V,np.multiply(A,self.dt))
+            Z = np.add(Z,np.multiply(vprev,self.dt))
+            # state[0] += Z[0]
+            # state[1] += Z[1]
+            # state[2] += Z[2]
+            # state[3] += V[0]
+            # state[4] += V[1]
+            # state[5] += V[2]
+
+            # Update Time vector
+            Tdrop += self.dt
+
+            
         # Actual hit location
-        self.hit = [self.true_bottle_path[0][-1],self.true_bottle_path[1][-1]]
+        p_hit += np.add(np.multiply(Tdrop,[wn,we,wd]),Z)
+        self.hit = p_hit
+        time.sleep(0.11)
         error = np.sqrt((target[0] - self.hit[0])**2 + (target[1] - self.hit[1])**2)
         print '\nAchieved:\t',self.hit,'\tError:\t',error,'\n'
 
@@ -110,7 +129,7 @@ class bottleDrop(kalmanFilter):
         # Equations of Motion
         xdot = [x[3],
                 x[4],
-                -x[5],
+                x[5],
                 -q * x[3]**2,
                 -q * x[4]**2,
                 self.g -q * x[5]**2]

@@ -27,7 +27,7 @@ def ctrl_c(plane,plane2,bottle,x0,wind,model):
 
             # Estimate wind
             bottle.wind_estimate(plane2.x_hat,plane2.chi_hat,plane2.psi_hat,wind)
-            
+
             # Maneuver to Run
             if plane.t_sim < switch_time:
                 r = [0, 0, 100]
@@ -41,14 +41,14 @@ def ctrl_c(plane,plane2,bottle,x0,wind,model):
                 R = plane.Rmin
                 target = [600,400]
 #                 bottle.calc_drop_location(-p_9[2],[670,170],[30,0,0])
-                # bottle.calc_drop_location(-p_est[2],target,[30,0,0],False)
-                bottle.calc_drop_location(-p_est[2],target,[30,0,0],True)
-                print bottle.pdrop
+                # bottle.calc_drop_location(-cmd[3],target,[30,0,0],False)
+                bottle.calc_drop_location(-cmd[3],target,[0,-30,0],True)
                 bottle.pdrop[2] = -100.0
 #                 P = plane.planRRT([p_9[0], p_9[1], -p_9[2]],bottle.pdrop,plane.x[2])
                 # P = plane.planRRT([p_est[0], p_est[1], -p_est[2]],bottle.pdrop,plane2.chi_hat)
                 # P[1][-1] = bottle.approach_angle
                 P = bottle.plan_path([p_est[0], p_est[1], -p_est[2]],bottle.pdrop,plane2.chi_hat)
+
                 W = np.transpose(np.transpose(P)[0:3,:])
 #                 path_type,r,q,c,rho,plane.lamb = plane.algorithm_8(P,p_9,R)
 #                 plane.plot_arrow(plane.x[2],p_9)
@@ -126,7 +126,8 @@ if __name__ == "__main__":
     
     # Initial Wind Vector
     # wind = [3,-3,0,0,0,0]
-    wind = [0,1,0,0,0,0]
+    # wind = [0,1,0,0,0,0]
+    wind = [0,0,0,0,0,0]
 
     # Trim
     trim = [x0[3],0,5e60]
